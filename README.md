@@ -10,6 +10,8 @@ Este es un bot de WhatsApp que se integra con la API de WhatsApp Business y Cont
 - **Deduplicación**: Evita procesar mensajes duplicados
 - **Envío de mensajes de texto**: Mensajes formateados con información de eventos
 - **Envío de imágenes**: Imágenes de eventos con captions informativos
+- **Mensajes interactivos**: Botones para facilitar la navegación
+- **Sistema de registro obligatorio**: Los usuarios deben registrarse antes de ver eventos
 
 ### 📅 Gestión de Eventos
 - **Integración con Contentful**: Obtiene eventos culturales desde CMS
@@ -29,6 +31,8 @@ Este es un bot de WhatsApp que se integra con la API de WhatsApp Business y Cont
   - Número de teléfono
   - Contador de mensajes
   - Historial de mensajes con timestamps
+  - Datos de registro de usuario (nombre, DNI, código de estudiante)
+  - Estado de registro paso a paso (temporal)
 - **Colección whatsapp_images**: Cache de imágenes
   - URL original de Contentful
   - ID de imagen de WhatsApp
@@ -40,6 +44,25 @@ Este es un bot de WhatsApp que se integra con la API de WhatsApp Business y Cont
 - **Manejo de expiración**: Limpia imágenes vencidas automáticamente (25 días)
 - **Optimización de ancho de banda**: Solo sube cada imagen una vez
 - **Mejor rendimiento**: Respuesta más rápida al reutilizar imágenes
+
+### 👤 Sistema de Registro de Usuarios
+- **Registro obligatorio**: Los usuarios deben registrarse antes de consultar eventos
+- **Dos modos de registro**:
+  - **Modo 1**: Registro completo en un mensaje (formato estructurado)
+  - **Modo 2**: Registro paso a paso (pregunta → respuesta)
+- **Datos requeridos**:
+  - Nombre completo
+  - DNI (8 dígitos)
+  - Código de estudiante
+- **Validaciones**:
+  - Nombre: mínimo 2 caracteres
+  - DNI: exactamente 8 dígitos numéricos
+  - Código: mínimo 3 caracteres
+- **Experiencia de usuario**:
+  - Mensajes claros con indicador de progreso (Paso X/3)
+  - Confirmación de cada dato ingresado
+  - Mensaje de bienvenida al completar el registro
+  - Botón interactivo para consultar eventos después del registro
 
 ### 🌐 API Web
 - **Webhook de WhatsApp**: Endpoint para recibir notificaciones

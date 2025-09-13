@@ -33,6 +33,40 @@ async function saveUser(phoneNumber, message = null) {
   return result.upsertedId || phoneNumber;
 }
 
+// Registrar datos del usuario
+async function registerUser(phoneNumber, userData) {
+  const db = getDb();
+  const now = new Date();
+  
+  const result = await db.collection('contacts').updateOne(
+    { phoneNumber },
+    { 
+      $set: { 
+        phoneNumber,
+        name: userData.name,
+        dni: userData.dni,
+        studentCode: userData.studentCode,
+        isRegistered: true,
+        registeredAt: now
+      }
+    },
+    { upsert: true }
+  );
+  
+  console.log(`[MONGODB] Usuario ${phoneNumber} registrado: ${userData.name}`);
+  return result.upsertedId || phoneNumber;
+}
+
+// Verificar si el usuario está registrado
+async function isUserRegistered(phoneNumber) {
+  const db = getDb();
+  const user = await db.collection('contacts').findOne({ 
+    phoneNumber,
+    isRegistered: true 
+  });
+  return !!user;
+}
+
 // Verificar si contacto existe
 async function contactExists(phoneNumber) {
   const db = getDb();
@@ -125,13 +159,77 @@ async function cleanExpiredImages() {
   return result.deletedCount;
 }
 
+// Obtener estado de registro paso a paso
+async function getRegistrationState(phoneNumber) {
+  const db = getDb();
+  const contact = await db.collection('contacts').findOne({ 
+    phoneNumber,
+    registrationState: { $exists: true }
+  });
+  
+  return contact?.registrationState || null;
+}
+
+// Actualizar estado de registro paso a paso
+async function updateRegistrationState(phoneNumber, state) {
+  const db = getDb();
+  const now = new Date();
+  
+  const result = await db.collection('contacts').updateOne(
+    { phoneNumber },
+    { 
+      $set: { 
+        phoneNumber,
+        registrationState: {
+          ...state,
+          updatedAt: now
+        }
+      }
+    },
+    { upsert: true }
+  );
+  
+  console.log(`[MONGODB] Estado de registro actualizado para ${phoneNumber}: ${state.step}`);
+  return result.upsertedId || phoneNumber;
+}
+
+// Completar registro paso a paso
+async function completeRegistration(phoneNumber, userData) {
+  const db = getDb();
+  const now = new Date();
+  
+  const result = await db.collection('contacts').updateOne(
+    { phoneNumber },
+    { 
+      $set: { 
+        phoneNumber,
+        name: userData.name,
+        dni: userData.dni,
+        studentCode: userData.studentCode,
+        isRegistered: true,
+        registeredAt: now
+      },
+      $unset: { registrationState: "" } // Limpiar el estado temporal
+    },
+    { upsert: true }
+  );
+  
+  console.log(`[MONGODB] Registro completado para ${phoneNumber}: ${userData.name}`);
+  return result.upsertedId || phoneNumber;
+}
+
 module.exports = {
   saveUser,
+  registerUser,
+  isUserRegistered,
   contactExists,
   getContact,
   getAllContacts,
   getStats,
   saveWhatsAppImage,
   getWhatsAppImage,
-  cleanExpiredImages
+  cleanExpiredImages,
+  getRegistrationState,
+  updateRegistrationState,
+  completeRegistration
 };
