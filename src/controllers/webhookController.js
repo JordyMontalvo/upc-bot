@@ -1,5 +1,4 @@
-const { saveMessage } = require('../db/messages');
-const { saveContact } = require('../db/contacts');
+const { saveUser } = require('../db/contacts');
 const { processMessage } = require('../services/messageService');
 
 // Almacenar IDs de mensajes ya procesados
@@ -59,11 +58,8 @@ const handleWebhook = async (req, res) => {
     console.log(`📱 Mensaje recibido de ${phoneNumber}: ${messageText}`);
     
     try {
-      // Guardar contacto y mensaje
-      await Promise.all([
-        saveContact(phoneNumber),
-        saveMessage(phoneNumber, messageText)
-      ]);
+      // Guardar contacto y mensaje en una sola operación
+      await saveUser(phoneNumber, messageText);
       
       // Solo responder a la palabra 'eventos'
       if (messageText.toLowerCase() === 'eventos') {

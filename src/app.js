@@ -43,14 +43,16 @@ const startServer = async () => {
     // Rutas de webhook de WhatsApp
     app.use('/webhook', webhookRoutes);
 
-    // Ruta para verificar usuarios (solo para desarrollo)
-    app.get('/users', async (req, res) => {
+    // Ruta para verificar contactos (solo para desarrollo)
+    app.get('/contacts', async (req, res) => {
       try {
-        const users = await getDb().collection('users').find({}).toArray();
-        res.json(users);
+        const { getAllContacts, getStats } = require('./db/contacts');
+        const contacts = await getAllContacts();
+        const stats = await getStats();
+        res.json({ contacts, stats });
       } catch (error) {
-        console.error('Error al obtener usuarios:', error);
-        res.status(500).json({ error: 'Error al obtener usuarios' });
+        console.error('Error al obtener contactos:', error);
+        res.status(500).json({ error: 'Error al obtener contactos' });
       }
     });
 

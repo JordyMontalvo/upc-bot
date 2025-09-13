@@ -1,5 +1,6 @@
 const axios = require('axios');
 const FormData = require('form-data');
+const { getWhatsAppImage, saveWhatsAppImage } = require('../db/contacts');
 
 // Enviar un mensaje de texto a través de la API de WhatsApp
 const sendTextMessage = async (phoneNumberId, to, text) => {
@@ -35,10 +36,21 @@ const sendTextMessage = async (phoneNumberId, to, text) => {
   }
 };
 
-// Subir un archivo multimedia a WhatsApp
+// Subir un archivo multimedia a WhatsApp (con cache)
 const uploadMedia = async (url) => {
-  console.log(`[WHATSAPP] Subiendo media desde: ${url}`);
+  console.log(`[WHATSAPP] Verificando cache para: ${url}`);
+  
   try {
+    // Verificar si ya está en cache
+    const cachedImageId = await getWhatsAppImage(url);
+    if (cachedImageId) {
+      console.log(`[WHATSAPP] ✅ Usando imagen desde cache: ${cachedImageId}`);
+      return cachedImageId;
+    }
+    
+    // Si no está en cache, subir a WhatsApp
+    console.log(`[WHATSAPP] Subiendo imagen nueva a WhatsApp: ${url}`);
+    
     // Descargar la imagen
     const response = await axios({
       method: 'get',
@@ -56,7 +68,6 @@ const uploadMedia = async (url) => {
     form.append('type', 'image/jpeg');
 
     // Subir a WhatsApp
-    console.log('[WHATSAPP] Iniciando subida de archivo a WhatsApp...');
     const uploadResponse = await axios.post(
       `https://graph.facebook.com/v23.0/${process.env.WHATSAPP_PHONE_NUMBER_ID}/media`,
       form,
@@ -68,8 +79,13 @@ const uploadMedia = async (url) => {
       }
     );
     
-    console.log(`[WHATSAPP] ✅ Media subido exitosamente. ID: ${uploadResponse.data.id}`);
-    return uploadResponse.data.id;
+    const whatsappImageId = uploadResponse.data.id;
+    console.log(`[WHATSAPP] ✅ Media subido exitosamente. ID: ${whatsappImageId}`);
+    
+    // Guardar en cache
+    await saveWhatsAppImage(url, whatsappImageId);
+    
+    return whatsappImageId;
   } catch (error) {
     console.error('❌ Error al subir medio a WhatsApp:', error.response?.data || error.message);
     throw error;
