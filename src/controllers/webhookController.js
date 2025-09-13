@@ -28,14 +28,25 @@ const handleWebhook = async (req, res) => {
       return res.sendStatus(200);
     }
     
-    // Solo procesar mensajes de texto entrantes
-    if (message.type !== 'text') {
-      console.log('Mensaje no es de texto, ignorando...');
+    // Procesar mensajes de texto y respuestas de botones
+    let messageText = '';
+    
+    if (message.type === 'text') {
+      messageText = message.text?.body || '';
+    } else if (message.type === 'interactive' && message.interactive?.type === 'button_reply') {
+      // Si es respuesta de botón, extraer el texto del botón
+      const buttonText = message.interactive.button_reply?.title || '';
+      if (buttonText.includes('Ver Eventos')) {
+        messageText = 'eventos';
+      } else {
+        messageText = buttonText.toLowerCase();
+      }
+    } else {
+      console.log('Mensaje no es de texto ni botón, ignorando...');
       return res.sendStatus(200);
     }
 
-    const { id: messageId, from: phoneNumber, text } = message;
-    const messageText = text?.body || '';
+    const { id: messageId, from: phoneNumber } = message;
 
     // Evitar procesamiento duplicado
     if (processedMessages.has(messageId)) {
@@ -56,11 +67,8 @@ const handleWebhook = async (req, res) => {
       // Guardar contacto y mensaje en una sola operación
       await saveUser(phoneNumber, messageText);
       
-      // Solo responder a la palabra 'eventos'
-      if (messageText.toLowerCase() === 'eventos') {
-        // Usar el phoneNumberId del webhook y el número del usuario
-        await processMessage(process.env.WHATSAPP_PHONE_NUMBER_ID, phoneNumber, messageText);
-      }
+      // Procesar todos los mensajes (eventos y otros)
+      await processMessage(process.env.WHATSAPP_PHONE_NUMBER_ID, phoneNumber, messageText);
       
       console.log(`✅ Mensaje ${messageId} procesado`);
     } catch (error) {

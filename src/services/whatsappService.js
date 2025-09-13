@@ -125,8 +125,54 @@ const sendImageMessage = async (phoneNumberId, to, imageId, caption = '') => {
   }
 };
 
+// Enviar mensaje con botones
+const sendButtonMessage = async (phoneNumberId, to, text, buttons) => {
+  console.log(`[WHATSAPP] Enviando mensaje con botones a ${to}`);
+  
+  try {
+    const response = await axios.post(
+      `https://graph.facebook.com/v23.0/${phoneNumberId}/messages`,
+      {
+        messaging_product: 'whatsapp',
+        to: to,
+        type: 'interactive',
+        interactive: {
+          type: 'button',
+          body: {
+            text: text
+          },
+          action: {
+            buttons: buttons.map((button, index) => ({
+              type: 'reply',
+              reply: {
+                id: `btn_${index}`,
+                title: button.title
+              }
+            }))
+          }
+        }
+      },
+      {
+        headers: {
+          'Authorization': `Bearer ${process.env.WHATSAPP_TOKEN}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+    
+    console.log(`[WHATSAPP] ✅ Mensaje con botones enviado exitosamente a ${to}`);
+    return response.data;
+  } catch (error) {
+    console.error('❌ Error al enviar mensaje con botones:');
+    console.error('Status:', error.response?.status);
+    console.error('Data:', error.response?.data);
+    throw error;
+  }
+};
+
 module.exports = {
   sendTextMessage,
   uploadMedia,
-  sendImageMessage
+  sendImageMessage,
+  sendButtonMessage
 };

@@ -1,4 +1,4 @@
-const { sendTextMessage, uploadMedia, sendImageMessage } = require('./whatsappService');
+const { sendTextMessage, uploadMedia, sendImageMessage, sendButtonMessage } = require('./whatsappService');
 const { getUpcomingEvents } = require('./contentfulService');
 
 // Formatear el mensaje del evento para WhatsApp
@@ -38,15 +38,45 @@ const formatEventMessage = (event) => {
 const processMessage = async (phoneNumberId, from, message) => {
   try {
     const lowerCaseMessage = message.toLowerCase().trim();
+    console.log(`[PROCESS] Procesando mensaje: "${message}" -> "${lowerCaseMessage}"`);
     
-    // Solo responder a "eventos"
+    // Responder a "eventos"
     if (lowerCaseMessage === 'eventos') {
+      console.log('[PROCESS] Enviando eventos...');
       await sendUpcomingEvents(phoneNumberId, from);
+    } else {
+      // Para cualquier otro mensaje, enviar botón de eventos
+      console.log('[PROCESS] Enviando botón de eventos...');
+      await sendEventButton(phoneNumberId, from);
     }
-    // No responder a otros mensajes
     
   } catch (error) {
     console.error('Error en processMessage:', error);
+  }
+};
+
+// Enviar botón para consultar eventos
+const sendEventButton = async (phoneNumberId, to) => {
+  try {
+    console.log(`[BUTTON] Enviando botón de eventos a ${to}`);
+    const message = `¡Hola! 👋\n\nSoy el bot de eventos culturales de la UPC. Para ver los próximos eventos, usa el botón de abajo:`;
+    
+    const buttons = [
+      { title: '📅 Ver Eventos' }
+    ];
+    
+    await sendButtonMessage(phoneNumberId, to, message, buttons);
+    console.log(`[BUTTON] ✅ Botón enviado exitosamente a ${to}`);
+    
+  } catch (error) {
+    console.error('Error al enviar botón de eventos:', error);
+    console.log(`[BUTTON] Fallback: enviando mensaje de texto a ${to}`);
+    // Fallback: enviar mensaje de texto simple
+    await sendTextMessage(
+      phoneNumberId, 
+      to, 
+      '¡Hola! 👋\n\nSoy el bot de eventos culturales de la UPC.\n\nPara ver los próximos eventos, escribe: *eventos*'
+    );
   }
 };
 
