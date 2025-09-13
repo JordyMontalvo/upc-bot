@@ -47,9 +47,9 @@ Este es un bot de WhatsApp que se integra con la API de WhatsApp Business y Cont
 
 ### 👤 Sistema de Registro de Usuarios
 - **Registro obligatorio**: Los usuarios deben registrarse antes de consultar eventos
-- **Dos modos de registro**:
+- **Dos modos de registro** (configurable en `messageService.js`):
   - **Modo 1**: Registro completo en un mensaje (formato estructurado)
-  - **Modo 2**: Registro paso a paso (pregunta → respuesta)
+  - **Modo 2**: Registro paso a paso (pregunta → respuesta) - **Por defecto**
 - **Datos requeridos**:
   - Nombre completo
   - DNI (8 dígitos)
@@ -64,6 +64,35 @@ Este es un bot de WhatsApp que se integra con la API de WhatsApp Business y Cont
   - Mensaje de bienvenida al completar el registro
   - Botón interactivo para consultar eventos después del registro
 
+#### Modo 1 - Registro Completo
+```
+Usuario envía:
+Nombre: Juan Pérez García
+DNI: 12345678
+Código: 20240001
+
+Bot responde:
+¡Perfecto! ✅
+Te has registrado exitosamente...
+```
+
+#### Modo 2 - Registro Paso a Paso
+```
+Usuario: "Hola"
+Bot: "¿Cuál es tu nombre completo?"
+
+Usuario: "Juan Pérez García"
+Bot: "✅ Nombre guardado: Juan Pérez García
+     ¿Cuál es tu DNI?"
+
+Usuario: "12345678"
+Bot: "✅ DNI guardado: 12345678
+     ¿Cuál es tu código de estudiante?"
+
+Usuario: "20240001"
+Bot: "¡Perfecto! ✅ Te has registrado exitosamente..."
+```
+
 ### 🌐 API Web
 - **Webhook de WhatsApp**: Endpoint para recibir notificaciones
 - **Verificación de webhook**: Validación con token personalizado
@@ -76,10 +105,29 @@ Este es un bot de WhatsApp que se integra con la API de WhatsApp Business y Cont
 - **Límite de eventos**: Máximo 3 eventos por respuesta
 - **Formato de fecha**: Localizado para Perú (es-PE)
 - **URLs clickeables**: Enlaces directos a eventos culturales
+- **Mensajes interactivos**: Botones de WhatsApp para mejor UX
+- **Configuración flexible**: Variable `REGISTRATION_MODE` para cambiar entre modos
+- **Estado de registro**: Persistencia temporal del progreso de registro
 
 ### Comandos del Bot
 
-- **Eventos**: Muestra la lista de próximos eventos culturales con imágenes y detalles completos
+- **"eventos"**: Muestra la lista de próximos eventos culturales con imágenes y detalles completos
+- **Botón "Ver Eventos"**: Botón interactivo que envía automáticamente el comando "eventos"
+- **Cualquier otro mensaje**: Si el usuario no está registrado, inicia el proceso de registro
+
+### Flujo de Interacción
+
+#### Para Usuarios No Registrados:
+1. **Primer mensaje** (ej: "Hola"): Inicia el proceso de registro
+2. **Registro paso a paso** (Modo 2 por defecto):
+   - Paso 1/3: Pide nombre completo
+   - Paso 2/3: Pide DNI (8 dígitos)
+   - Paso 3/3: Pide código de estudiante
+3. **Después del registro**: Muestra botón "Ver Eventos"
+
+#### Para Usuarios Registrados:
+1. **"eventos"** o **botón "Ver Eventos"**: Muestra próximos eventos
+2. **Cualquier otro mensaje**: Muestra botón "Ver Eventos"
 
 ## Estructura del Proyecto
 
