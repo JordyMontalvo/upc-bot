@@ -2,127 +2,61 @@
 
 Este es un bot de WhatsApp que se integra con la API de WhatsApp Business y Contentful para proporcionar información sobre los próximos eventos culturales de la UPC.
 
-## Configuración Inicial
-
-### Requisitos Previos
-
-- Node.js (v14 o superior)
-- Cuenta de WhatsApp Business API
-- Cuenta en Contentful con un espacio configurado
-
-### Instalación
-
-1. Clona el repositorio:
-   ```bash
-   git clone <repositorio>
-   cd cultural-bot
-   ```
-
-2. Instala las dependencias:
-   ```bash
-   npm install
-   ```
-
-3. Configura las variables de entorno:
-   - Copia el archivo `.env.example` a `.env`
-   - Completa las variables de entorno con tus credenciales
-
-### Configuración de Variables de Entorno
-
-Crea un archivo `.env` en la raíz del proyecto con las siguientes variables:
-
-```
-# Server Configuration
-PORT=3000
-
-# WhatsApp Business API Configuration
-WHATSAPP_TOKEN=your_whatsapp_business_token
-WHATSAPP_PHONE_NUMBER_ID=your_phone_number_id
-VERIFY_TOKEN=your_webhook_verify_token
-
-# Contentful Configuration
-CONTENTFUL_SPACE_ID=your_space_id
-CONTENTFUL_ACCESS_TOKEN=your_access_token
-CONTENTFUL_ENVIRONMENT=master
-```
-
 ## 📚 Funcionalidades
 
-### Módulo de Base de Datos
-- **Conexión a MongoDB**: Configuración y manejo de la conexión a la base de datos
-- **Modelo de Usuario**: Estructura para almacenar información de los usuarios que interactúan con el bot
+### 🤖 Bot de WhatsApp
+- **Recepción de mensajes**: Procesa mensajes de texto entrantes
+- **Respuesta automática**: Responde solo a la palabra "eventos"
+- **Deduplicación**: Evita procesar mensajes duplicados
+- **Envío de mensajes de texto**: Mensajes formateados con información de eventos
+- **Envío de imágenes**: Imágenes de eventos con captions informativos
+
+### 📅 Gestión de Eventos
+- **Integración con Contentful**: Obtiene eventos culturales desde CMS
+- **Eventos futuros**: Prioriza eventos próximos (máximo 3)
+- **Eventos pasados**: Si no hay futuros, muestra los 2 más recientes
+- **Formato de eventos**: Cards optimizados para móvil con:
+  - Título del evento
+  - Fecha y hora formateadas
+  - Ubicación
+  - Precio
+  - URL del evento
+  - Imagen del evento
+
+### 🗄️ Base de Datos
+- **MongoDB Atlas**: Almacenamiento en la nube
+- **Colección contacts**: Almacena contactos y mensajes
   - Número de teléfono
-  - Nombre (opcional)
-  - Email (opcional)
-  - Preferencias de notificación
-  - Historial de interacciones
   - Contador de mensajes
+  - Historial de mensajes con timestamps
+- **Colección whatsapp_images**: Cache de imágenes
+  - URL original de Contentful
+  - ID de imagen de WhatsApp
+  - Fecha de subida y expiración (25 días)
 
-### Módulo de WhatsApp
-- **Recepción de Mensajes**: Procesamiento de mensajes entrantes de WhatsApp
-- **Envío de Mensajes**: Envío de respuestas automáticas
-- **Manejo de Medios**: Procesamiento de imágenes y archivos multimedia
-- **Deduplicación**: Evita el procesamiento duplicado de mensajes
+### 🖼️ Sistema de Cache de Imágenes
+- **Cache de WhatsApp**: Almacena IDs de imágenes de WhatsApp para reutilizar
+- **URLs de Contentful**: Cachea la relación entre URL original e ID de WhatsApp
+- **Manejo de expiración**: Limpia imágenes vencidas automáticamente (25 días)
+- **Optimización de ancho de banda**: Solo sube cada imagen una vez
+- **Mejor rendimiento**: Respuesta más rápida al reutilizar imágenes
 
-### Módulo de Eventos
-- **Integración con Contentful**: Obtención de eventos culturales
-- **Formateo de Eventos**: Presentación consistente de la información de eventos
-- **Filtrado**: Búsqueda de eventos por fecha, categoría, etc.
+### 🌐 API Web
+- **Webhook de WhatsApp**: Endpoint para recibir notificaciones
+- **Verificación de webhook**: Validación con token personalizado
+- **Ruta de monitoreo**: `/contacts` para ver contactos y estadísticas
+- **Auto-liberación de puerto**: Libera puerto 3000 automáticamente al iniciar
 
-### Módulo de Usuarios
-- **Registro Automático**: Creación de perfiles al primer mensaje
-- **Seguimiento de Interacciones**: Registro de la actividad del usuario
-- **Preferencias**: Almacenamiento de preferencias de notificación
-- **Estadísticas**: Métricas de uso del bot
-
-### API Web
-- **Webhook**: Endpoint para recibir notificaciones de WhatsApp
-- **Rutas de Administración**: Para monitoreo y gestión
-- **Manejo de Errores**: Logging y recuperación de fallos
-
-## 🗑️ Deprecated/Historical
-
-### Características eliminadas o reemplazadas
-- **Almacenamiento en Memoria**: Reemplazado por MongoDB para persistencia
-- **Guardado de Media IDs**: Se eliminó la lógica de guardar IDs de medios en Contentful
-
-## 🛠 Configuración de Contentful
-
-1. Crea un espacio en Contentful si aún no tienes uno.
-2. Crea un Content Type llamado "event" con los siguientes campos:
-   - `title` (Texto corto, requerido)
-   - `description` (Texto largo, opcional)
-   - `date` (Fecha y hora, requerido)
-   - `time` (Texto corto, opcional)
-   - `location` (Texto corto, opcional)
-   - `image` (Medios, opcional)
-3. Asegúrate de publicar el Content Type.
-4. Crea algunas entradas de eventos de ejemplo.
-
-## Configuración del Webhook de WhatsApp
-
-1. Configura un servidor HTTPS (puedes usar ngrok para desarrollo local).
-2. Configura el webhook en el panel de desarrolladores de Meta:
-   - URL: `https://tudominio.com/webhook`
-   - Token de verificación: El mismo que configuraste en `.env` como `VERIFY_TOKEN`
-
-## Uso
-
-### Iniciar el servidor
-
-```bash
-# Modo desarrollo (con recarga automática)
-npm run dev
-
-# Modo producción
-npm start
-```
+### 🔧 Características Técnicas
+- **Manejo de errores**: Logs detallados para debugging
+- **Validación de mensajes**: Solo procesa mensajes de texto válidos
+- **Límite de eventos**: Máximo 3 eventos por respuesta
+- **Formato de fecha**: Localizado para Perú (es-PE)
+- **URLs clickeables**: Enlaces directos a eventos culturales
 
 ### Comandos del Bot
 
-- **Hola**: Muestra el mensaje de bienvenida
-- **Eventos** o **Próximos eventos**: Muestra la lista de próximos eventos culturales
-- **Ayuda**: Muestra los comandos disponibles
+- **Eventos**: Muestra la lista de próximos eventos culturales con imágenes y detalles completos
 
 ## Estructura del Proyecto
 

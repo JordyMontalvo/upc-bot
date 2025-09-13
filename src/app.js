@@ -1,14 +1,13 @@
 require('dotenv').config();
 const express = require('express');
-const bodyParser = require('body-parser');
 const { exec } = require('child_process');
 const webhookRoutes = require('./routes/webhook');
-const { connectToDatabase, getDb } = require('./db/connection');
+const { connectToDatabase } = require('./db/connection');
 
 const app = express();
 
 // Middleware
-app.use(bodyParser.json());
+app.use(express.json());
 
 // Función para liberar el puerto 3000
 const killPort3000 = () => {

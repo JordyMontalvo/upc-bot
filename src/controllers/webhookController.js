@@ -4,26 +4,21 @@ const { processMessage } = require('../services/messageService');
 // Almacenar IDs de mensajes ya procesados
 const processedMessages = new Set();
 
-// Verificar el token del webhook
-const verifyWebhook = (req, res) => {
-  const mode = req.query['hub.mode'];
-  const token = req.query['hub.verify_token'];
-  const challenge = req.query['hub.challenge'];
-
-  if (mode === 'subscribe' && token === process.env.VERIFY_TOKEN) {
-    console.log('WEBHOOK_VERIFIED');
-    return res.status(200).send(challenge);
-  }
-  
-  res.sendStatus(403);
-};
-
 // Manejar los mensajes entrantes
 const handleWebhook = async (req, res) => {
   try {
     // Verificar si es una verificación del webhook
     if (req.query['hub.mode'] === 'subscribe' && req.query['hub.verify_token']) {
-      return verifyWebhook(req, res);
+      const mode = req.query['hub.mode'];
+      const token = req.query['hub.verify_token'];
+      const challenge = req.query['hub.challenge'];
+
+      if (mode === 'subscribe' && token === process.env.VERIFY_TOKEN) {
+        console.log('WEBHOOK_VERIFIED');
+        return res.status(200).send(challenge);
+      }
+      
+      return res.sendStatus(403);
     }
 
     // Verificar que es un mensaje de WhatsApp válido
@@ -81,6 +76,5 @@ const handleWebhook = async (req, res) => {
 };
 
 module.exports = {
-  verifyWebhook,
   handleWebhook
 };
