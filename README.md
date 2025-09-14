@@ -108,6 +108,7 @@ Bot: "¡Perfecto! ✅ Te has registrado exitosamente..."
 - **Mensajes interactivos**: Botones de WhatsApp para mejor UX
 - **Configuración flexible**: Variable `REGISTRATION_MODE` para cambiar entre modos
 - **Estado de registro**: Persistencia temporal del progreso de registro
+- **Script de utilidad**: Intercambio automático de tokens de WhatsApp
 
 ### Comandos del Bot
 
@@ -138,10 +139,25 @@ cultural-bot/
 │   ├── routes/         # Definición de rutas de la API
 │   ├── services/       # Lógica de negocio y servicios externos
 │   └── app.js          # Punto de entrada de la aplicación
+├── scripts/
+│   ├── exchange-token.js  # Script para intercambiar tokens de WhatsApp
+│   └── README.md          # Documentación de scripts
 ├── .env                # Variables de entorno (no incluido en el control de versiones)
 ├── .gitignore          # Archivos y carpetas a ignorar por Git
 └── package.json        # Dependencias y scripts
 ```
+
+## 🔧 Scripts de Utilidad
+
+### Intercambio de Tokens de WhatsApp
+
+Script simple para intercambiar tokens de corta duración por tokens de larga duración (60 días):
+
+1. Edita `scripts/exchange-token.js`
+2. Reemplaza los valores de `shortLivedToken`, `appId` y `appSecret`
+3. Ejecuta: `node scripts/exchange-token.js`
+
+El script mostrará el nuevo token de larga duración.
 
 ## Despliegue
 
