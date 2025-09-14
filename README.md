@@ -161,9 +161,53 @@ El script mostrará el nuevo token de larga duración.
 
 ## Despliegue
 
-Puedes desplegar este bot en cualquier servicio de alojamiento que soporte Node.js, como:
+### Vercel (Recomendado)
+
+#### Opción 1: Con Vercel CLI (Sin Git)
+
+1. **Instalar Vercel CLI:**
+   ```bash
+   npm install -g vercel
+   ```
+
+2. **Desplegar directamente:**
+   ```bash
+   # Desde la carpeta del proyecto
+   vercel
+   
+   # Configurar variables de entorno
+   vercel env add WHATSAPP_TOKEN
+   vercel env add WHATSAPP_PHONE_NUMBER_ID
+   # ... (ver DEPLOY_VERCEL_CLI.md para lista completa)
+   
+   # Desplegar a producción
+   vercel --prod
+   ```
+
+#### Opción 2: Con GitHub
+
+1. **Subir a GitHub:**
+   ```bash
+   git add .
+   git commit -m "Preparado para Vercel"
+   git push origin main
+   ```
+
+2. **Conectar con Vercel:**
+   - Ve a [vercel.com](https://vercel.com)
+   - Conecta tu repositorio de GitHub
+   - Vercel detectará automáticamente la configuración
+
+3. **Configurar variables de entorno:**
+   - Ve a Settings > Environment Variables
+   - Agrega todas las variables del archivo `VERCEL_ENV.md`
+
+#### Configurar webhook de WhatsApp:
+- Usa la URL de Vercel: `https://tu-proyecto.vercel.app/webhook`
+- Configura el token de verificación en ambas plataformas
+
+### Otros servicios de alojamiento:
 - Heroku
-- Vercel
 - AWS Elastic Beanstalk
 - Google Cloud Run
 

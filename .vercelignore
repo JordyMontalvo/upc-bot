@@ -1,0 +1,20 @@
+# Archivos de desarrollo
+scripts/
+*.log
+*.md
+.git/
+.gitignore
+
+# Archivos de configuración local
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Dependencias
+node_modules/
+
+# Archivos temporales
+.tmp/
+temp/
