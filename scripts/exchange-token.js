@@ -18,7 +18,7 @@ async function exchangeWhatsAppToken(shortLivedToken, appId, appSecret) {
 
 // Reemplaza estos valores con tus credenciales
 const shortLivedToken = 'EAFXpPZBHV80oBPYQovMpJw3J6HkXA3ZA2NkirDdYwAwuxTbRZB32VGfCqwItFmQ2cZAcdPsjuZAnxJISlJPRTsbowSGwmYKtqmK05poriluuqfZBLaRIeZBa5fNDFMae2Q33El1CABeZCPFILbWZALLUYbz1ACBDn9dSZAEO4PMZBdspeCGOZBoZC1UknRbGfphRA9yphSwihHjjeL9mwZAxKiK8Pu6jp1JgSgmpcoigICbZAxoOhq8B68O0NFz4F021Mc8ZAQZDZD';
-const appId = '24181833601512266';
-const appSecret = '007236df2a1677e682a82194c3a19f14';
+const appId = '1352981949949720';
+const appSecret = '70d7658f7480bc9c2ed9c11226b43ca4';
 
 exchangeWhatsAppToken(shortLivedToken, appId, appSecret);
