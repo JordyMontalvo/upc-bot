@@ -2,7 +2,7 @@ const { getDb } = require('./connection');
 
 // Guardar o actualizar usuario (consolidado)
 async function saveUser(phoneNumber, message = null) {
-  const db = getDb();
+  const db = await getDb();
   const now = new Date();
   
   // Construir el objeto de actualización
@@ -35,7 +35,7 @@ async function saveUser(phoneNumber, message = null) {
 
 // Registrar datos del usuario
 async function registerUser(phoneNumber, userData) {
-  const db = getDb();
+  const db = await getDb();
   const now = new Date();
   
   const result = await db.collection('contacts').updateOne(
@@ -59,7 +59,7 @@ async function registerUser(phoneNumber, userData) {
 
 // Verificar si el usuario está registrado
 async function isUserRegistered(phoneNumber) {
-  const db = getDb();
+  const db = await getDb();
   const user = await db.collection('contacts').findOne({ 
     phoneNumber,
     isRegistered: true 
@@ -69,20 +69,20 @@ async function isUserRegistered(phoneNumber) {
 
 // Verificar si contacto existe
 async function contactExists(phoneNumber) {
-  const db = getDb();
+  const db = await getDb();
   const contact = await db.collection('contacts').findOne({ phoneNumber });
   return !!contact;
 }
 
 // Obtener contacto completo
 async function getContact(phoneNumber) {
-  const db = getDb();
+  const db = await getDb();
   return await db.collection('contacts').findOne({ phoneNumber });
 }
 
 // Obtener todos los contactos
 async function getAllContacts() {
-  const db = getDb();
+  const db = await getDb();
   return await db.collection('contacts')
     .find({})
     .sort({ lastSeen: -1 })
@@ -91,7 +91,7 @@ async function getAllContacts() {
 
 // Obtener estadísticas
 async function getStats() {
-  const db = getDb();
+  const db = await getDb();
   const totalContacts = await db.collection('contacts').countDocuments();
   const totalMessages = await db.collection('contacts').aggregate([
     { $group: { _id: null, total: { $sum: '$messageCount' } } }
@@ -105,7 +105,7 @@ async function getStats() {
 
 // Guardar imagen de WhatsApp en cache
 async function saveWhatsAppImage(originalUrl, whatsappImageId) {
-  const db = getDb();
+  const db = await getDb();
   const now = new Date();
   
   const result = await db.collection('whatsapp_images').updateOne(
@@ -127,7 +127,7 @@ async function saveWhatsAppImage(originalUrl, whatsappImageId) {
 
 // Obtener imagen de WhatsApp desde cache
 async function getWhatsAppImage(originalUrl) {
-  const db = getDb();
+  const db = await getDb();
   const now = new Date();
   
   const image = await db.collection('whatsapp_images').findOne({
@@ -145,7 +145,7 @@ async function getWhatsAppImage(originalUrl) {
 
 // Limpiar imágenes expiradas
 async function cleanExpiredImages() {
-  const db = getDb();
+  const db = await getDb();
   const now = new Date();
   
   const result = await db.collection('whatsapp_images').deleteMany({
@@ -161,7 +161,7 @@ async function cleanExpiredImages() {
 
 // Obtener estado de registro paso a paso
 async function getRegistrationState(phoneNumber) {
-  const db = getDb();
+  const db = await getDb();
   const contact = await db.collection('contacts').findOne({ 
     phoneNumber,
     registrationState: { $exists: true }
@@ -172,7 +172,7 @@ async function getRegistrationState(phoneNumber) {
 
 // Actualizar estado de registro paso a paso
 async function updateRegistrationState(phoneNumber, state) {
-  const db = getDb();
+  const db = await getDb();
   const now = new Date();
   
   const result = await db.collection('contacts').updateOne(
@@ -195,7 +195,7 @@ async function updateRegistrationState(phoneNumber, state) {
 
 // Completar registro paso a paso
 async function completeRegistration(phoneNumber, userData) {
-  const db = getDb();
+  const db = await getDb();
   const now = new Date();
   
   const result = await db.collection('contacts').updateOne(

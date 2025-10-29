@@ -9,6 +9,25 @@ const app = express();
 // Middleware
 app.use(express.json());
 
+// Middleware para asegurar conexión a la base de datos en Vercel
+app.use(async (req, res, next) => {
+  // Solo aplicar en rutas que requieren BD (excepto verificación de webhook)
+  if (req.path === '/webhook' && req.method === 'GET') {
+    return next(); // La verificación del webhook no necesita BD
+  }
+  
+  try {
+    // Asegurar que la BD esté conectada antes de continuar
+    const { connectToDatabase } = require('./db/connection');
+    await connectToDatabase();
+    next();
+  } catch (error) {
+    console.error('❌ Error al conectar a la BD en middleware:', error);
+    // Continuar de todas formas (para que el webhook pueda responder)
+    next();
+  }
+});
+
 // Configurar rutas
 // Ruta para verificar el servidor
 app.get('/', (req, res) => {
