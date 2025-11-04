@@ -1,6 +1,6 @@
 const { sendTextMessage, uploadMedia, sendImageMessage, sendButtonMessage } = require('./whatsappService');
 const { getUpcomingEvents } = require('./contentfulService');
-const { isUserRegistered, registerUser, getRegistrationState, updateRegistrationState, completeRegistration } = require('../db/contacts');
+const { isUserRegistered, registerUser, getRegistrationState, updateRegistrationState, completeRegistration, isOptedOut, optOut, optIn } = require('../db/contacts');
 
 // Configuración de modos de registro
 const REGISTRATION_MODE = 2; // 1 = mensaje completo, 2 = paso a paso
@@ -44,6 +44,17 @@ const processMessage = async (phoneNumberId, from, message) => {
     const lowerCaseMessage = message.toLowerCase().trim();
     console.log(`[PROCESS] Procesando mensaje: "${message}" -> "${lowerCaseMessage}"`);
     
+    // Comandos de opt-out/opt-in (funcionan siempre, incluso si no está registrado)
+    if (isOptOutCommand(lowerCaseMessage)) {
+      await handleOptOut(phoneNumberId, from);
+      return;
+    }
+    
+    if (isOptInCommand(lowerCaseMessage)) {
+      await handleOptIn(phoneNumberId, from);
+      return;
+    }
+    
     // Verificar si el usuario está registrado
     const isRegistered = await isUserRegistered(from);
     console.log(`[PROCESS] Usuario ${from} registrado: ${isRegistered}`);
@@ -52,7 +63,27 @@ const processMessage = async (phoneNumberId, from, message) => {
       // Si no está registrado, pedir datos
       await sendRegistrationRequest(phoneNumberId, from, message);
     } else {
-      // Si está registrado, procesar mensaje normal
+      // Verificar si el usuario se ha dado de baja
+      const optedOut = await isOptedOut(from);
+      if (optedOut) {
+        // Si está dado de baja, solo responder mensajes directos, no enviar automáticamente
+        if (lowerCaseMessage === 'eventos') {
+          await sendTextMessage(
+            phoneNumberId,
+            from,
+            '📵 Has solicitado dejar de recibir mensajes automáticos.\n\nPara volver a recibir mensajes, escribe: *reactivarse* o *activar*'
+          );
+        } else {
+          await sendTextMessage(
+            phoneNumberId,
+            from,
+            '📵 Has solicitado dejar de recibir mensajes automáticos.\n\nEscribe *eventos* para ver eventos o *reactivarse* para volver a recibir mensajes.'
+          );
+        }
+        return;
+      }
+      
+      // Si está registrado y no se ha dado de baja, procesar mensaje normal
       if (lowerCaseMessage === 'eventos') {
         console.log('[PROCESS] Enviando eventos...');
         await sendUpcomingEvents(phoneNumberId, from);
@@ -64,6 +95,100 @@ const processMessage = async (phoneNumberId, from, message) => {
     
   } catch (error) {
     console.error('Error en processMessage:', error);
+  }
+};
+
+// Verificar si el mensaje es un comando de opt-out
+const isOptOutCommand = (message) => {
+  const optOutKeywords = [
+    'darse de baja',
+    'darme de baja',
+    'baja',
+    'cancelar suscripción',
+    'cancelar suscripcion',
+    'no recibir mensajes',
+    'no quiero recibir',
+    'opt out',
+    'unsubscribe',
+    'desactivar',
+    'desactivar mensajes'
+  ];
+  
+  return optOutKeywords.some(keyword => message.includes(keyword));
+};
+
+// Verificar si el mensaje es un comando de opt-in
+const isOptInCommand = (message) => {
+  const optInKeywords = [
+    'reactivarse',
+    'reactivar',
+    'activar',
+    'activar mensajes',
+    'volver a recibir',
+    'quiero recibir',
+    'opt in',
+    'subscribe',
+    'suscribirse'
+  ];
+  
+  return optInKeywords.some(keyword => message.includes(keyword));
+};
+
+// Manejar opt-out (darse de baja)
+const handleOptOut = async (phoneNumberId, to) => {
+  try {
+    const alreadyOptedOut = await isOptedOut(to);
+    
+    if (alreadyOptedOut) {
+      await sendTextMessage(
+        phoneNumberId,
+        to,
+        '📵 Ya estás dado de baja. No recibirás mensajes automáticos ni campañas.\n\nSi cambias de opinión, escribe: *reactivarse*'
+      );
+    } else {
+      await optOut(to);
+      await sendTextMessage(
+        phoneNumberId,
+        to,
+        '✅ Te has dado de baja exitosamente.\n\nYa no recibirás mensajes automáticos ni campañas del bot.\n\nSi cambias de opinión, puedes reactivarte escribiendo: *reactivarse* o *activar*'
+      );
+    }
+  } catch (error) {
+    console.error('Error al procesar opt-out:', error);
+    await sendTextMessage(
+      phoneNumberId,
+      to,
+      '❌ Hubo un error al procesar tu solicitud. Intenta nuevamente.'
+    );
+  }
+};
+
+// Manejar opt-in (reactivarse)
+const handleOptIn = async (phoneNumberId, to) => {
+  try {
+    const optedOut = await isOptedOut(to);
+    
+    if (!optedOut) {
+      await sendTextMessage(
+        phoneNumberId,
+        to,
+        '✅ Ya estás activo y recibes mensajes automáticos.\n\nSi quieres dejar de recibir mensajes, escribe: *darse de baja*'
+      );
+    } else {
+      await optIn(to);
+      await sendTextMessage(
+        phoneNumberId,
+        to,
+        '✅ ¡Te has reactivado exitosamente!\n\nVolverás a recibir mensajes automáticos y campañas del bot.\n\nSi quieres dejar de recibir mensajes, escribe: *darse de baja*'
+      );
+    }
+  } catch (error) {
+    console.error('Error al procesar opt-in:', error);
+    await sendTextMessage(
+      phoneNumberId,
+      to,
+      '❌ Hubo un error al procesar tu solicitud. Intenta nuevamente.'
+    );
   }
 };
 

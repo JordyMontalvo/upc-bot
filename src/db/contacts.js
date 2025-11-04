@@ -218,6 +218,70 @@ async function completeRegistration(phoneNumber, userData) {
   return result.upsertedId || phoneNumber;
 }
 
+// Verificar si el usuario se ha dado de baja (opt-out)
+async function isOptedOut(phoneNumber) {
+  const db = await getDb();
+  const contact = await db.collection('contacts').findOne({ phoneNumber });
+  return contact?.optedOut === true;
+}
+
+// Darse de baja (opt-out) - dejar de recibir mensajes
+async function optOut(phoneNumber) {
+  const db = await getDb();
+  const now = new Date();
+  
+  const result = await db.collection('contacts').updateOne(
+    { phoneNumber },
+    { 
+      $set: { 
+        phoneNumber,
+        optedOut: true,
+        optedOutAt: now
+      }
+    },
+    { upsert: true }
+  );
+  
+  console.log(`[MONGODB] Usuario ${phoneNumber} se dio de baja (opt-out)`);
+  return result.upsertedId || phoneNumber;
+}
+
+// Reactivarse (opt-in) - volver a recibir mensajes
+async function optIn(phoneNumber) {
+  const db = await getDb();
+  const now = new Date();
+  
+  const result = await db.collection('contacts').updateOne(
+    { phoneNumber },
+    { 
+      $set: { 
+        phoneNumber,
+        optedOut: false,
+        optedInAt: now
+      },
+      $unset: { optedOutAt: "" }
+    },
+    { upsert: true }
+  );
+  
+  console.log(`[MONGODB] Usuario ${phoneNumber} se reactivó (opt-in)`);
+  return result.upsertedId || phoneNumber;
+}
+
+// Obtener todos los contactos que NO se han dado de baja (para campañas)
+async function getActiveContacts() {
+  const db = await getDb();
+  return await db.collection('contacts')
+    .find({ 
+      $or: [
+        { optedOut: { $ne: true } },
+        { optedOut: { $exists: false } }
+      ]
+    })
+    .sort({ lastSeen: -1 })
+    .toArray();
+}
+
 module.exports = {
   saveUser,
   registerUser,
@@ -231,5 +295,9 @@ module.exports = {
   cleanExpiredImages,
   getRegistrationState,
   updateRegistrationState,
-  completeRegistration
+  completeRegistration,
+  isOptedOut,
+  optOut,
+  optIn,
+  getActiveContacts
 };
