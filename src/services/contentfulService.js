@@ -17,7 +17,7 @@ if (hasContentfulCredentials) {
   console.log('⚠️  No se encontraron credenciales de Contentful. Usando datos de prueba.');
 }
 
-// Obtener los próximos eventos culturales
+// Obtener los próximos eventos culturales (solo eventos futuros)
 const getUpcomingEvents = async () => {
   if (!client) {
     console.log('⚠️  No hay cliente de Contentful configurado');
@@ -27,12 +27,12 @@ const getUpcomingEvents = async () => {
   try {
     const now = new Date().toISOString();
     
-    // Primero intentar obtener eventos futuros
+    // Obtener solo eventos futuros ordenados por fecha (más próximos primero)
     const futureEvents = await client.getEntries({
       content_type: 'event',
-      'fields.date[gte]': now,
-      order: 'fields.date',
-      limit: 3
+      'fields.date[gte]': now, // Solo eventos con fecha mayor o igual a hoy
+      order: 'fields.date', // Orden ascendente (más próximos primero)
+      limit: 10 // Aumentar el límite para mostrar más eventos
     });
 
     if (futureEvents.items.length > 0) {
@@ -40,18 +40,8 @@ const getUpcomingEvents = async () => {
       return futureEvents.items.map(formatEvent);
     }
 
-    console.log('ℹ️  No hay eventos futuros. Buscando los últimos eventos...');
-    
-    // Si no hay eventos futuros, obtener los 2 eventos más recientes
-    const pastEvents = await client.getEntries({
-      content_type: 'event',
-      'fields.date[lte]': now,
-      order: '-fields.date', // Orden descendente por fecha (más recientes primero)
-      limit: 2
-    });
-
-    console.log(`ℹ️  Se encontraron ${pastEvents.items.length} eventos pasados`);
-    return pastEvents.items.map(formatEvent);
+    console.log('ℹ️  No hay eventos futuros disponibles');
+    return [];
     
   } catch (error) {
     console.error('❌ Error al obtener eventos de Contentful:', error);

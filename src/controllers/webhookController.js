@@ -38,6 +38,10 @@ const handleWebhook = async (req, res) => {
       const buttonText = message.interactive.button_reply?.title || '';
       if (buttonText.includes('Ver Eventos')) {
         messageText = 'eventos';
+      } else if (buttonText.includes('Configuración')) {
+        messageText = 'configuración';
+      } else if (buttonText.includes('Darse de baja')) {
+        messageText = 'darse de baja';
       } else {
         messageText = buttonText.toLowerCase();
       }

@@ -1,6 +1,6 @@
 const { sendTextMessage, uploadMedia, sendImageMessage, sendButtonMessage } = require('./whatsappService');
 const { getUpcomingEvents } = require('./contentfulService');
-const { isUserRegistered, registerUser, getRegistrationState, updateRegistrationState, completeRegistration, isOptedOut, optOut, optIn } = require('../db/contacts');
+const { isUserRegistered, registerUser, getRegistrationState, updateRegistrationState, completeRegistration, isOptedOut, optOut } = require('../db/contacts');
 
 // Configuración de modos de registro
 const REGISTRATION_MODE = 2; // 1 = mensaje completo, 2 = paso a paso
@@ -44,14 +44,15 @@ const processMessage = async (phoneNumberId, from, message) => {
     const lowerCaseMessage = message.toLowerCase().trim();
     console.log(`[PROCESS] Procesando mensaje: "${message}" -> "${lowerCaseMessage}"`);
     
-    // Comandos de opt-out/opt-in (funcionan siempre, incluso si no está registrado)
+    // Comandos de opt-out (funcionan siempre, incluso si no está registrado)
     if (isOptOutCommand(lowerCaseMessage)) {
       await handleOptOut(phoneNumberId, from);
       return;
     }
     
-    if (isOptInCommand(lowerCaseMessage)) {
-      await handleOptIn(phoneNumberId, from);
+    // Manejar botón de configuración
+    if (lowerCaseMessage === 'configuración' || lowerCaseMessage === 'configuracion') {
+      await handleConfiguration(phoneNumberId, from);
       return;
     }
     
@@ -71,13 +72,13 @@ const processMessage = async (phoneNumberId, from, message) => {
           await sendTextMessage(
             phoneNumberId,
             from,
-            '📵 Has solicitado dejar de recibir mensajes automáticos.\n\nPara volver a recibir mensajes, escribe: *reactivarse* o *activar*'
+            '📵 Has solicitado dejar de recibir mensajes automáticos.\n\nYa no recibirás más mensajes de campañas.'
           );
         } else {
           await sendTextMessage(
             phoneNumberId,
             from,
-            '📵 Has solicitado dejar de recibir mensajes automáticos.\n\nEscribe *eventos* para ver eventos o *reactivarse* para volver a recibir mensajes.'
+            '📵 Has solicitado dejar de recibir mensajes automáticos.\n\nEscribe *eventos* para ver eventos.'
           );
         }
         return;
@@ -117,21 +118,24 @@ const isOptOutCommand = (message) => {
   return optOutKeywords.some(keyword => message.includes(keyword));
 };
 
-// Verificar si el mensaje es un comando de opt-in
-const isOptInCommand = (message) => {
-  const optInKeywords = [
-    'reactivarse',
-    'reactivar',
-    'activar',
-    'activar mensajes',
-    'volver a recibir',
-    'quiero recibir',
-    'opt in',
-    'subscribe',
-    'suscribirse'
-  ];
-  
-  return optInKeywords.some(keyword => message.includes(keyword));
+// Manejar botón de configuración
+const handleConfiguration = async (phoneNumberId, to) => {
+  try {
+    console.log(`[CONFIG] Mostrando configuración para ${to}`);
+    const message = `📢 *Confirmación de suscripción*\n\nHola! 👋\n\nQueremos confirmar si deseas seguir recibiendo información sobre eventos culturales y campañas de la UPC.\n\nSi *no deseas* seguir recibiendo mensajes, escribe:\n❌ *darse de baja* o *baja*\n\nTu respuesta es importante para nosotros. 😊`;
+    
+    await sendTextMessage(phoneNumberId, to, message);
+    console.log(`[CONFIG] ✅ Mensaje de configuración enviado a ${to}`);
+    
+  } catch (error) {
+    console.error('Error al enviar menú de configuración:', error);
+    // Fallback: enviar mensaje de texto simple
+    await sendTextMessage(
+      phoneNumberId, 
+      to, 
+      '📢 *Confirmación de suscripción*\n\nHola! 👋\n\nQueremos confirmar si deseas seguir recibiendo información sobre eventos culturales y campañas de la UPC.\n\nSi *no deseas* seguir recibiendo mensajes, escribe:\n❌ *darse de baja* o *baja*\n\nTu respuesta es importante para nosotros. 😊'
+    );
+  }
 };
 
 // Manejar opt-out (darse de baja)
@@ -143,14 +147,14 @@ const handleOptOut = async (phoneNumberId, to) => {
       await sendTextMessage(
         phoneNumberId,
         to,
-        '📵 Ya estás dado de baja. No recibirás mensajes automáticos ni campañas.\n\nSi cambias de opinión, escribe: *reactivarse*'
+        '📵 Ya estás dado de baja. No recibirás más mensajes automáticos ni campañas.'
       );
     } else {
       await optOut(to);
       await sendTextMessage(
         phoneNumberId,
         to,
-        '✅ Te has dado de baja exitosamente.\n\nYa no recibirás mensajes automáticos ni campañas del bot.\n\nSi cambias de opinión, puedes reactivarte escribiendo: *reactivarse* o *activar*'
+        '👋 *¡Nos vemos luego!*\n\nGracias por haber sido parte de nuestra comunidad de eventos culturales UPC.\n\nEsperamos verte nuevamente pronto.\n\n*UPC* 🎓'
       );
     }
   } catch (error) {
@@ -163,34 +167,6 @@ const handleOptOut = async (phoneNumberId, to) => {
   }
 };
 
-// Manejar opt-in (reactivarse)
-const handleOptIn = async (phoneNumberId, to) => {
-  try {
-    const optedOut = await isOptedOut(to);
-    
-    if (!optedOut) {
-      await sendTextMessage(
-        phoneNumberId,
-        to,
-        '✅ Ya estás activo y recibes mensajes automáticos.\n\nSi quieres dejar de recibir mensajes, escribe: *darse de baja*'
-      );
-    } else {
-      await optIn(to);
-      await sendTextMessage(
-        phoneNumberId,
-        to,
-        '✅ ¡Te has reactivado exitosamente!\n\nVolverás a recibir mensajes automáticos y campañas del bot.\n\nSi quieres dejar de recibir mensajes, escribe: *darse de baja*'
-      );
-    }
-  } catch (error) {
-    console.error('Error al procesar opt-in:', error);
-    await sendTextMessage(
-      phoneNumberId,
-      to,
-      '❌ Hubo un error al procesar tu solicitud. Intenta nuevamente.'
-    );
-  }
-};
 
 // Manejar solicitud de registro
 const sendRegistrationRequest = async (phoneNumberId, to, message) => {
@@ -366,7 +342,8 @@ const sendEventButton = async (phoneNumberId, to) => {
     const message = `¡Hola! 👋\n\nSoy el bot de eventos culturales de la UPC. Para ver los próximos eventos, usa el botón de abajo:`;
     
     const buttons = [
-      { title: '📅 Ver Eventos' }
+      { title: '📅 Ver Eventos' },
+      { title: '⚙️ Configuración' }
     ];
     
     await sendButtonMessage(phoneNumberId, to, message, buttons);
