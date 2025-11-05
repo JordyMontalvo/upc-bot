@@ -42,6 +42,8 @@ const handleWebhook = async (req, res) => {
         messageText = 'configuración';
       } else if (buttonText.includes('Darse de baja')) {
         messageText = 'darse de baja';
+      } else if (buttonText.includes('No tengo código') || buttonText.includes('No tengo codigo')) {
+        messageText = 'no tengo código';
       } else {
         messageText = buttonText.toLowerCase();
       }

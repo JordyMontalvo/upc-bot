@@ -291,19 +291,36 @@ const handleStepByStepRegistration = async (phoneNumberId, to, message) => {
         step: 'studentCode', 
         data: { ...currentState.data, dni } 
       });
-      await sendTextMessage(
-        phoneNumberId,
-        to,
-        `✅ DNI guardado: *${dni}*\n\n📝 *Paso 3/3:*\n\n¿Cuál es tu código de estudiante?`
-      );
-    } else if (currentState.step === 'studentCode') {
-      // Completar registro
-      const studentCode = message.trim();
-      if (studentCode.length < 3) {
+      
+      // Enviar mensaje con botón para "No tengo código"
+      const studentCodeMessage = `✅ DNI guardado: *${dni}*\n\n📝 *Paso 3/3:*\n\n¿Cuál es tu código de estudiante?`;
+      const buttons = [
+        { title: '❌ No tengo código' }
+      ];
+      
+      try {
+        await sendButtonMessage(phoneNumberId, to, studentCodeMessage, buttons);
+      } catch (error) {
+        console.error('Error al enviar botón, enviando mensaje de texto:', error);
         await sendTextMessage(
           phoneNumberId,
           to,
-          '❌ Por favor, ingresa un código de estudiante válido (mínimo 3 caracteres).'
+          `${studentCodeMessage}\n\nSi no tienes código, escribe: *no tengo*`
+        );
+      }
+    } else if (currentState.step === 'studentCode') {
+      // Completar registro
+      let studentCode = message.trim();
+      
+      // Verificar si el usuario presionó "No tengo código" o escribió algo similar
+      const lowerMessage = message.toLowerCase().trim();
+      if (lowerMessage === 'no tengo código' || lowerMessage === 'no tengo codigo' || lowerMessage === 'no tengo' || lowerMessage.includes('no tengo')) {
+        studentCode = ''; // String vacío si no tiene código
+      } else if (studentCode.length > 0 && studentCode.length < 3) {
+        await sendTextMessage(
+          phoneNumberId,
+          to,
+          '❌ Por favor, ingresa un código de estudiante válido (mínimo 3 caracteres) o presiona "No tengo código".'
         );
         return;
       }
@@ -311,14 +328,24 @@ const handleStepByStepRegistration = async (phoneNumberId, to, message) => {
       // Completar el registro
       const registrationData = {
         ...currentState.data,
-        studentCode
+        studentCode: studentCode || '' // Asegurar que sea string vacío si no hay código
       };
       
       await completeRegistration(to, registrationData);
+      
+      // Construir mensaje de confirmación (solo mostrar código si tiene valor)
+      let confirmationMessage = `¡Perfecto! ✅\n\nTe has registrado exitosamente:\n\n👤 *Nombre:* ${registrationData.name}\n🆔 *DNI:* ${registrationData.dni}`;
+      
+      if (registrationData.studentCode && registrationData.studentCode.trim().length > 0) {
+        confirmationMessage += `\n🎓 *Código:* ${registrationData.studentCode}`;
+      }
+      
+      confirmationMessage += `\n\n¡Ahora ya puedes consultar los eventos culturales!`;
+      
       await sendTextMessage(
         phoneNumberId,
         to,
-        `¡Perfecto! ✅\n\nTe has registrado exitosamente:\n\n👤 *Nombre:* ${registrationData.name}\n🆔 *DNI:* ${registrationData.dni}\n🎓 *Código:* ${registrationData.studentCode}\n\n¡Ahora ya puedes consultar los eventos culturales!`
+        confirmationMessage
       );
       
       // Enviar botón de eventos después del registro
