@@ -214,6 +214,16 @@ const getEventDateInfo = (fields) => {
 
   let formattedDate = 'Fecha por confirmar';
   let formattedTime = 'Horario por confirmar';
+  let rawDate = parsed.raw;
+
+  let rawTimeFromDate = null;
+
+  if (typeof rawDate === 'string') {
+    const rawMatch = rawDate.match(/T(\d{2}):(\d{2})/);
+    if (rawMatch) {
+      rawTimeFromDate = `${rawMatch[1]}:${rawMatch[2]}`;
+    }
+  }
 
   if (parsed.date && !Number.isNaN(parsed.date.getTime())) {
     formattedDate = parsed.date.toLocaleDateString('es-PE', {
@@ -245,7 +255,8 @@ const getEventDateInfo = (fields) => {
     fields.eventTime,
     fields.timeRange,
     fields.horario,
-    fields.hora
+    fields.hora,
+    rawTimeFromDate
   ];
 
   for (const manual of manualTimeCandidates) {
