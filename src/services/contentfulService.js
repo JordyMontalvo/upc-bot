@@ -107,9 +107,11 @@ const generateSlug = (title) => {
     .toLowerCase()
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '') // Eliminar acentos
-    .replace(/[^a-z0-9.]+/g, '-') // Reemplazar caracteres especiales con guiones, excepto puntos
+    .replace(/[^a-z0-9.:\-]+/g, '-') // Permitir letras, números, puntos, dos puntos y guiones
+    .replace(/-{2,}/g, '-') // Reemplazar múltiples guiones seguidos
+    .replace(/:{2,}/g, ':') // Normalizar múltiples dos puntos
     .replace(/\.+/g, '.') // Reemplazar múltiples puntos por uno solo
-    .replace(/(^\.+|\.+$)/g, '') // Eliminar puntos al inicio y final
+    .replace(/(^[:.\-]+|[:.\-]+$)/g, '') // Eliminar puntos, guiones o dos puntos al inicio y final
     .replace(/^-+|-+$/g, '') // Eliminar guiones al inicio y final
     .trim();
 };
@@ -289,16 +291,33 @@ const formatEvent = (item) => {
     extractUrlFromField(fields.pageUrl)
   ].filter(Boolean);
 
-  let eventUrl = candidateUrls.length > 0 ? candidateUrls[0] : null;
+  const slugFields = [
+    fields.slug,
+    fields.urlSlug,
+    fields.culturalSlug,
+    fields.permalink
+  ].filter(value => typeof value === 'string' && value.trim().length > 0);
 
-  if (!eventUrl && typeof fields.slug === 'string' && fields.slug.trim().length > 0) {
-    const slugValue = fields.slug.trim();
-    if (/^https?:\/\//i.test(slugValue)) {
-      eventUrl = slugValue;
-    } else if (slugValue.startsWith('/')) {
-      eventUrl = `https://cultural.upc.edu.pe${slugValue}`;
+  let eventUrl = null;
+
+  for (const slugCandidate of slugFields) {
+    const trimmed = slugCandidate.trim();
+    if (/^https?:\/\//i.test(trimmed)) {
+      eventUrl = normalizeUrl(trimmed);
+      break;
+    } else if (trimmed.startsWith('/')) {
+      eventUrl = `https://cultural.upc.edu.pe${trimmed}`;
+      break;
     } else {
-      eventUrl = `https://cultural.upc.edu.pe/agenda/${slugValue}`;
+      eventUrl = `https://cultural.upc.edu.pe/agenda/${trimmed}`;
+      break;
+    }
+  }
+
+  if (!eventUrl) {
+    const culturalCandidate = candidateUrls.find(url => typeof url === 'string' && url.includes('cultural.upc.edu.pe'));
+    if (culturalCandidate) {
+      eventUrl = culturalCandidate;
     }
   }
 
