@@ -49,32 +49,107 @@ const getUpcomingEvents = async () => {
   }
 };
 
+// Normalizar URLs provenientes de Contentful
+const normalizeUrl = (rawUrl) => {
+  if (!rawUrl || typeof rawUrl !== 'string') return null;
+
+  const trimmed = rawUrl.trim();
+  if (!trimmed) return null;
+
+  if (/^https?:\/\//i.test(trimmed)) {
+    return trimmed;
+  }
+
+  if (trimmed.startsWith('//')) {
+    return `https:${trimmed}`;
+  }
+
+  if (trimmed.startsWith('/')) {
+    return `https://cultural.upc.edu.pe${trimmed}`;
+  }
+
+  return `https://${trimmed}`;
+};
+
+const extractUrlFromField = (value) => {
+  if (!value) return null;
+
+  if (typeof value === 'string') {
+    return normalizeUrl(value);
+  }
+
+  if (typeof value === 'object') {
+    const nestedCandidates = [
+      value.url,
+      value.uri,
+      value.href,
+      value.link,
+      value.fields?.url,
+      value.fields?.uri,
+      value.fields?.href,
+      value.fields?.link,
+      value.fields?.file?.url
+    ];
+
+    for (const candidate of nestedCandidates) {
+      const normalized = normalizeUrl(candidate);
+      if (normalized) return normalized;
+    }
+  }
+
+  return null;
+};
+
+// Generar slug a partir del título manteniendo todas las palabras
+const generateSlug = (title) => {
+  if (!title) return '';
+  return title
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '') // Eliminar acentos
+    .replace(/[^a-z0-9.]+/g, '-') // Reemplazar caracteres especiales con guiones, excepto puntos
+    .replace(/\.+/g, '.') // Reemplazar múltiples puntos por uno solo
+    .replace(/(^\.+|\.+$)/g, '') // Eliminar puntos al inicio y final
+    .replace(/^-+|-+$/g, '') // Eliminar guiones al inicio y final
+    .trim();
+};
+
 // Formatear un evento para la respuesta
 const formatEvent = (item) => {
   const fields = item.fields || {};
   const imageUrl = fields.image?.fields?.file?.url ? 
     `https:${fields.image.fields.file.url}` : 
     null;
-    
-  // Generar slug a partir del título manteniendo todas las palabras
-  const generateSlug = (title) => {
-    if (!title) return '';
-    return title
-      .toLowerCase()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '') // Eliminar acentos
-      .replace(/[^a-z0-9.]+/g, '-') // Reemplazar caracteres especiales con guiones, excepto puntos
-      .replace(/\.+/g, '.') // Reemplazar múltiples puntos por uno solo
-      .replace(/(^\.+|\.+$)/g, '') // Eliminar puntos al inicio y final
-      .replace(/^-+|-+$/g, '') // Eliminar guiones al inicio y final
-      .trim();
-  };
 
   const title = fields.title || 'Evento sin título';
-  const slug = generateSlug(title);
-  
-  // Construir la URL completa con el formato cultural.upc.edu.pe/agenda/[slug]
-  const eventUrl = `https://cultural.upc.edu.pe/agenda/${slug}`;
+
+  const candidateUrls = [
+    extractUrlFromField(fields.link),
+    extractUrlFromField(fields.url),
+    extractUrlFromField(fields.eventUrl),
+    extractUrlFromField(fields.externalLink),
+    extractUrlFromField(fields.buttonLink),
+    extractUrlFromField(fields.ctaLink),
+    extractUrlFromField(fields.pageUrl)
+  ].filter(Boolean);
+
+  let eventUrl = candidateUrls.length > 0 ? candidateUrls[0] : null;
+
+  if (!eventUrl && typeof fields.slug === 'string' && fields.slug.trim().length > 0) {
+    const slugValue = fields.slug.trim();
+    if (/^https?:\/\//i.test(slugValue)) {
+      eventUrl = slugValue;
+    } else if (slugValue.startsWith('/')) {
+      eventUrl = `https://cultural.upc.edu.pe${slugValue}`;
+    } else {
+      eventUrl = `https://cultural.upc.edu.pe/agenda/${slugValue}`;
+    }
+  }
+
+  if (!eventUrl) {
+    const fallbackSlug = generateSlug(title);
+    eventUrl = `https://cultural.upc.edu.pe/agenda/${fallbackSlug}`;
+  }
   
   const eventDate = fields.date ? new Date(fields.date) : null;
   
