@@ -114,6 +114,151 @@ const generateSlug = (title) => {
     .trim();
 };
 
+const parseDateValue = (value) => {
+  if (!value) return { date: null, raw: null };
+
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    return { date: value, raw: value.toISOString() };
+  }
+
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (!trimmed) return { date: null, raw: null };
+
+    let parsedDate = null;
+
+    const isoMatch = trimmed.match(
+      /^(\d{4})-(\d{2})-(\d{2})([T\s](\d{2}):(\d{2})(?::(\d{2})(?:\.\d{1,3})?)?(Z|[+\-]\d{2}:\d{2})?)?$/
+    );
+
+    if (isoMatch) {
+      parsedDate = new Date(trimmed);
+      if (Number.isNaN(parsedDate.getTime()) && !isoMatch[4]) {
+        const year = Number(isoMatch[1]);
+        const month = Number(isoMatch[2]) - 1;
+        const day = Number(isoMatch[3]);
+        parsedDate = new Date(Date.UTC(year, month, day));
+      }
+    }
+
+    if (!parsedDate || Number.isNaN(parsedDate.getTime())) {
+      parsedDate = new Date(trimmed.replace(/\s+/g, ' '));
+    }
+
+    if (!parsedDate || Number.isNaN(parsedDate.getTime())) {
+      return { date: null, raw: trimmed };
+    }
+
+    return { date: parsedDate, raw: trimmed };
+  }
+
+  return { date: null, raw: null };
+};
+
+const normalizeManualTime = (timeValue) => {
+  if (!timeValue) return null;
+
+  const stringValue = String(timeValue).trim();
+  if (!stringValue) return null;
+
+  const lowerValue = stringValue.toLowerCase();
+  if (lowerValue === 'por confirmar' || lowerValue === 'por definirse') {
+    return 'Horario por confirmar';
+  }
+
+  let normalized = stringValue
+    .replace(/hrs?\.?/gi, '')
+    .replace(/horas?\.?/gi, '')
+    .replace(/[\.]/g, ':')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+
+  const fourDigitMatch = normalized.match(/^(\d{1,2})(\d{2})$/);
+  if (fourDigitMatch) {
+    normalized = `${fourDigitMatch[1].padStart(2, '0')}:${fourDigitMatch[2]}`;
+  }
+
+  const basicTimeMatch = normalized.match(/^(\d{1,2})(:\d{2})?\s*(am|pm|a\.m\.|p\.m\.)?$/i);
+  if (basicTimeMatch) {
+    const hour = basicTimeMatch[1].padStart(2, '0');
+    const minutes = basicTimeMatch[2] ? basicTimeMatch[2] : ':00';
+    const meridiem = basicTimeMatch[3] ? basicTimeMatch[3].toLowerCase() : '';
+
+    if (meridiem) {
+      return `${hour}${minutes} ${meridiem.replace('.', '').replace('am', 'a. m.').replace('pm', 'p. m.')}`;
+    }
+
+    return `${hour}${minutes}`;
+  }
+
+  return normalized;
+};
+
+const getEventDateInfo = (fields) => {
+  const dateCandidates = [
+    fields.date,
+    fields.eventDate,
+    fields.startDate,
+    fields.startDateTime,
+    fields.datetime,
+    fields.fecha,
+    fields.fechaHora
+  ];
+
+  let parsed = { date: null, raw: null };
+
+  for (const candidate of dateCandidates) {
+    parsed = parseDateValue(candidate);
+    if (parsed.date) break;
+  }
+
+  let formattedDate = 'Fecha por confirmar';
+  let formattedTime = 'Horario por confirmar';
+
+  if (parsed.date && !Number.isNaN(parsed.date.getTime())) {
+    formattedDate = parsed.date.toLocaleDateString('es-PE', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+      timeZone: 'America/Lima'
+    });
+
+    formattedTime = parsed.date.toLocaleTimeString('es-PE', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+      timeZone: 'America/Lima'
+    });
+
+    if (formattedTime === '00:00') {
+      formattedTime = 'Horario por confirmar';
+    }
+  }
+
+  const manualTimeCandidates = [
+    fields.time,
+    fields.startTime,
+    fields.startHour,
+    fields.schedule,
+    fields.hour,
+    fields.eventTime,
+    fields.timeRange,
+    fields.horario,
+    fields.hora
+  ];
+
+  for (const manual of manualTimeCandidates) {
+    const normalized = normalizeManualTime(manual);
+    if (normalized) {
+      formattedTime = normalized;
+      break;
+    }
+  }
+
+  return { formattedDate, formattedTime };
+};
+
 // Formatear un evento para la respuesta
 const formatEvent = (item) => {
   const fields = item.fields || {};
@@ -150,25 +295,15 @@ const formatEvent = (item) => {
     const fallbackSlug = generateSlug(title);
     eventUrl = `https://cultural.upc.edu.pe/agenda/${fallbackSlug}`;
   }
-  
-  const eventDate = fields.date ? new Date(fields.date) : null;
-  
+
+  const { formattedDate, formattedTime } = getEventDateInfo(fields);
+
   return {
     id: item.sys?.id || '',
     title: title,
     description: fields.description || 'Sin descripción disponible',
-    date: eventDate ? eventDate.toLocaleDateString('es-PE', {
-      weekday: 'long',
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric',
-      timeZone: 'America/Lima'
-    }) : 'Fecha por confirmar',
-    time: eventDate ? eventDate.toLocaleTimeString('es-PE', { 
-      hour: '2-digit',
-      minute: '2-digit',
-      timeZone: 'America/Lima'
-    }) : 'Horario por confirmar',
+    date: formattedDate,
+    time: formattedTime,
     location: fields.address || 'Ubicación por confirmar',
     price: typeof fields.price === 'number' ? `S/ ${fields.price.toFixed(2)}` : 'Gratis',
     link: eventUrl,
