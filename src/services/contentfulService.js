@@ -100,20 +100,32 @@ const extractUrlFromField = (value) => {
   return null;
 };
 
-// Generar slug a partir del título manteniendo todas las palabras
-const generateSlug = (title) => {
-  if (!title) return '';
-  return title
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '') // Eliminar acentos
-    .replace(/[^a-z0-9.:\-]+/g, '-') // Permitir letras, números, puntos, dos puntos y guiones
-    .replace(/-{2,}/g, '-') // Reemplazar múltiples guiones seguidos
-    .replace(/:{2,}/g, ':') // Normalizar múltiples dos puntos
-    .replace(/\.+/g, '.') // Reemplazar múltiples puntos por uno solo
-    .replace(/(^[:.\-]+|[:.\-]+$)/g, '') // Eliminar puntos, guiones o dos puntos al inicio y final
-    .replace(/^-+|-+$/g, '') // Eliminar guiones al inicio y final
-    .trim();
+// Normalizar string para formar URLs (slug)
+const normalize = (str) => {
+  if (!str) return '';
+  
+  var from = "ÃÀÁÄÂÈÉËÊÌÍÏÎÒÓÖÔÙÚÜÛãàáäâèéëêìíïîòóöôùúüûÑñÇç,#¿?",
+    to = "AAAAAEEEEIIIIOOOOUUUUaaaaaeeeeiiiioooouuuunncc",
+    mapping = {};
+
+  for (var i = 0, j = from.length; i < j; i++)
+    mapping[from.charAt(i)] = to.charAt(i);
+
+  var ret = [];
+
+  for (var x = 0, y = str.length; x < y; x++) {
+    var c = str.charAt(x);
+    if (mapping.hasOwnProperty(str.charAt(x)))
+      ret.push(mapping[c]);
+    else if ((str[x] === " "))
+      ret.push('-');
+    else if ((str.length - 1 === x) && (str[str.length - 1] === " "))
+      ret.push('-');
+    else
+      ret.push(c);
+  }
+
+  return ret.join('').toLocaleLowerCase().trim();
 };
 
 const parseDateValue = (value) => {
@@ -306,10 +318,12 @@ const formatEvent = (item) => {
       eventUrl = normalizeUrl(trimmed);
       break;
     } else if (trimmed.startsWith('/')) {
-      eventUrl = `https://cultural.upc.edu.pe${trimmed}`;
+      const normalizedSlug = normalize(trimmed.substring(1)); // Normalizar sin el /
+      eventUrl = `https://cultural.upc.edu.pe/${normalizedSlug}`;
       break;
     } else {
-      eventUrl = `https://cultural.upc.edu.pe/agenda/${trimmed}`;
+      const normalizedSlug = normalize(trimmed);
+      eventUrl = `https://cultural.upc.edu.pe/agenda/${normalizedSlug}`;
       break;
     }
   }
@@ -322,7 +336,7 @@ const formatEvent = (item) => {
   }
 
   if (!eventUrl) {
-    const fallbackSlug = generateSlug(title);
+    const fallbackSlug = normalize(title);
     eventUrl = `https://cultural.upc.edu.pe/agenda/${fallbackSlug}`;
   }
 
