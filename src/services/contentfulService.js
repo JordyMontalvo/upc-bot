@@ -33,12 +33,19 @@ const getUpcomingEvents = async () => {
     const allEvents = await client.getEntries({
       content_type: 'event',
       order: 'fields.date', // Orden ascendente (más próximos primero)
-      limit: 50 // Aumentar el límite para incluir eventos con fecha de fin
+      limit: 100 // Aumentar el límite para incluir todos los eventos posibles
     });
 
+    console.log(`[FILTRO] Total de eventos obtenidos de Contentful: ${allEvents.items.length}`);
+    console.log(`[FILTRO] Fecha actual: ${now.toISOString()}`);
+    
     // Filtrar eventos manualmente considerando fecha de inicio y fecha de fin
     const validEvents = allEvents.items.filter(item => {
       const fields = item.fields || {};
+      const title = fields.title || 'sin título';
+      
+      // Log para ver todos los eventos
+      console.log(`[FILTRO] Procesando evento: "${title}"`);
       
       // Obtener fecha de inicio
       const startDateCandidates = [
@@ -61,7 +68,7 @@ const getUpcomingEvents = async () => {
       }
 
       if (!startDate) {
-        console.log(`[FILTRO] Evento "${fields.title || 'sin título'}" sin fecha de inicio - descartado`);
+        console.log(`[FILTRO] Evento "${title}" sin fecha de inicio - descartado`);
         return false; // Si no tiene fecha de inicio, no lo mostramos
       }
 
@@ -83,7 +90,8 @@ const getUpcomingEvents = async () => {
         0, 0, 0, 0
       ));
 
-      // Si tiene fecha de fin: mostrar si la fecha actual está entre inicio y fin (inclusive)
+      // Si tiene fecha de fin: mostrar si la fecha actual es menor o igual a la fecha de fin
+      // (es decir, el evento aún no ha terminado, puede estar en curso o ser futuro)
       if (endDate) {
         const endOfDayStart = new Date(Date.UTC(
           endDate.getUTCFullYear(),
@@ -91,16 +99,16 @@ const getUpcomingEvents = async () => {
           endDate.getUTCDate(),
           0, 0, 0, 0
         ));
-        // Mostrar si hoy está entre el día de inicio y el día de fin (inclusive)
-        const isValid = nowStartOfDay.getTime() >= startOfDay.getTime() && nowStartOfDay.getTime() <= endOfDayStart.getTime();
-        console.log(`[FILTRO] Evento "${fields.title || 'sin título'}" con fecha fin: inicio=${startOfDay.toISOString()}, fin=${endOfDayStart.toISOString()}, ahora=${nowStartOfDay.toISOString()}, válido=${isValid}`);
+        // Mostrar si hoy es menor o igual a la fecha de fin (el evento aún no ha terminado)
+        const isValid = nowStartOfDay.getTime() <= endOfDayStart.getTime();
+        console.log(`[FILTRO] Evento "${title}" con fecha fin: inicio=${startOfDay.toISOString()}, fin=${endOfDayStart.toISOString()}, ahora=${nowStartOfDay.toISOString()}, válido=${isValid}`);
         return isValid;
       }
 
       // Si NO tiene fecha de fin: mostrar solo si la fecha actual es menor o igual a la fecha de inicio
       // (es decir, solo el día del evento o antes, no después)
       const isValid = nowStartOfDay.getTime() <= startOfDay.getTime();
-      console.log(`[FILTRO] Evento "${fields.title || 'sin título'}" sin fecha fin: inicio=${startOfDay.toISOString()}, ahora=${nowStartOfDay.toISOString()}, válido=${isValid}`);
+      console.log(`[FILTRO] Evento "${title}" sin fecha fin: inicio=${startOfDay.toISOString()}, ahora=${nowStartOfDay.toISOString()}, válido=${isValid}`);
       return isValid;
     });
 
