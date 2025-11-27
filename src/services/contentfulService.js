@@ -61,27 +61,47 @@ const getUpcomingEvents = async () => {
       }
 
       if (!startDate) {
+        console.log(`[FILTRO] Evento "${fields.title || 'sin título'}" sin fecha de inicio - descartado`);
         return false; // Si no tiene fecha de inicio, no lo mostramos
       }
 
       // Obtener fecha de fin
       const endDate = getEventEndDate(fields);
 
+      // Normalizar fechas para comparación por día (sin hora)
+      // Usar UTC para evitar problemas de zona horaria
+      const startOfDay = new Date(Date.UTC(
+        startDate.getUTCFullYear(),
+        startDate.getUTCMonth(),
+        startDate.getUTCDate(),
+        0, 0, 0, 0
+      ));
+      const nowStartOfDay = new Date(Date.UTC(
+        now.getUTCFullYear(),
+        now.getUTCMonth(),
+        now.getUTCDate(),
+        0, 0, 0, 0
+      ));
+
       // Si tiene fecha de fin: mostrar si la fecha actual está entre inicio y fin (inclusive)
       if (endDate) {
-        // Ajustar la fecha de fin al final del día para incluir todo el día
-        const endOfDay = new Date(endDate);
-        endOfDay.setHours(23, 59, 59, 999);
-        return now >= startDate && now <= endOfDay;
+        const endOfDayStart = new Date(Date.UTC(
+          endDate.getUTCFullYear(),
+          endDate.getUTCMonth(),
+          endDate.getUTCDate(),
+          0, 0, 0, 0
+        ));
+        // Mostrar si hoy está entre el día de inicio y el día de fin (inclusive)
+        const isValid = nowStartOfDay.getTime() >= startOfDay.getTime() && nowStartOfDay.getTime() <= endOfDayStart.getTime();
+        console.log(`[FILTRO] Evento "${fields.title || 'sin título'}" con fecha fin: inicio=${startOfDay.toISOString()}, fin=${endOfDayStart.toISOString()}, ahora=${nowStartOfDay.toISOString()}, válido=${isValid}`);
+        return isValid;
       }
 
       // Si NO tiene fecha de fin: mostrar solo si la fecha actual es menor o igual a la fecha de inicio
       // (es decir, solo el día del evento o antes, no después)
-      const startOfDay = new Date(startDate);
-      startOfDay.setHours(0, 0, 0, 0);
-      const nowStartOfDay = new Date(now);
-      nowStartOfDay.setHours(0, 0, 0, 0);
-      return nowStartOfDay <= startOfDay;
+      const isValid = nowStartOfDay.getTime() <= startOfDay.getTime();
+      console.log(`[FILTRO] Evento "${fields.title || 'sin título'}" sin fecha fin: inicio=${startOfDay.toISOString()}, ahora=${nowStartOfDay.toISOString()}, válido=${isValid}`);
+      return isValid;
     });
 
     // Limitar a los primeros 10 eventos más próximos
