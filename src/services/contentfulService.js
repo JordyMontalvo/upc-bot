@@ -305,6 +305,7 @@ const normalizeManualTime = (timeValue) => {
 // Obtener fecha de fin del evento
 const getEventEndDate = (fields) => {
   const endDateCandidates = [
+    fields.date_end,  // Campo encontrado en Contentful
     fields.endDate,
     fields.end_date,
     fields.fechaFin,
