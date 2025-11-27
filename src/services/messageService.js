@@ -11,7 +11,31 @@ const formatEventMessage = (event) => {
   
   // Fecha y hora
   if (event.date) {
-    message += `📅 *Fecha:* ${event.date}\n`;
+    if (event.endDate) {
+      // Si tiene fecha de fin, mostrar rango de fechas
+      // El formato de event.date es: "lunes, 27 de noviembre de 2025"
+      // El formato de event.endDate es: "30 de noviembre de 2025"
+      // Extraer el día de la fecha de inicio (después de la coma)
+      const startDateMatch = event.date.match(/,\s*(\d{1,2})\s+de\s+(\w+)\s+de\s+(\d{4})/);
+      if (startDateMatch) {
+        const startDay = startDateMatch[1];
+        // La fecha de fin ya viene formateada como "día de mes de año"
+        message += `📅 *Fecha:* desde el ${startDay} al ${event.endDate}\n`;
+      } else {
+        // Si no hay coma, intentar otro formato
+        const startDateMatch2 = event.date.match(/(\d{1,2})\s+de\s+(\w+)\s+de\s+(\d{4})/);
+        if (startDateMatch2) {
+          const startDay = startDateMatch2[1];
+          message += `📅 *Fecha:* desde el ${startDay} al ${event.endDate}\n`;
+        } else {
+          // Fallback si no coincide el formato
+          message += `📅 *Fecha:* ${event.date} - ${event.endDate}\n`;
+        }
+      }
+    } else {
+      // Si no tiene fecha de fin, mostrar solo la fecha de inicio
+      message += `📅 *Fecha:* ${event.date}\n`;
+    }
   }
   if (event.time && event.time !== 'Horario por confirmar') {
     message += `🕐 *Hora:* ${event.time}\n`;
@@ -20,11 +44,6 @@ const formatEventMessage = (event) => {
   // Ubicación
   if (event.location) {
     message += `📍 *Lugar:* ${event.location}\n`;
-  }
-  
-  // Precio
-  if (event.price) {
-    message += `💰 *Precio:* ${event.price}\n`;
   }
   
   // Separador

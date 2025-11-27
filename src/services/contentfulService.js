@@ -471,12 +471,25 @@ const formatEvent = (item) => {
   }
 
   const { formattedDate, formattedTime } = getEventDateInfo(fields);
+  
+  // Obtener fecha de fin formateada
+  const endDate = getEventEndDate(fields);
+  let formattedEndDate = null;
+  if (endDate && !Number.isNaN(endDate.getTime())) {
+    formattedEndDate = endDate.toLocaleDateString('es-PE', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+      timeZone: 'America/Lima'
+    });
+  }
 
   return {
     id: item.sys?.id || '',
     title: title,
     description: fields.description || 'Sin descripción disponible',
     date: formattedDate,
+    endDate: formattedEndDate,
     time: formattedTime,
     location: fields.address || 'Ubicación por confirmar',
     price: typeof fields.price === 'number' ? `S/ ${fields.price.toFixed(2)}` : 'Gratis',
