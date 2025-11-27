@@ -17,7 +17,7 @@ if (hasContentfulCredentials) {
   console.log('⚠️  No se encontraron credenciales de Contentful. Usando datos de prueba.');
 }
 
-// Obtener los próximos eventos culturales (solo eventos futuros)
+// Obtener los próximos eventos culturales (considerando fecha de inicio y fecha de fin)
 const getUpcomingEvents = async () => {
   if (!client) {
     console.log('⚠️  No hay cliente de Contentful configurado');
@@ -25,19 +25,71 @@ const getUpcomingEvents = async () => {
   }
 
   try {
-    const now = new Date().toISOString();
+    const now = new Date();
+    const nowISO = now.toISOString();
     
-    // Obtener solo eventos futuros ordenados por fecha (más próximos primero)
-    const futureEvents = await client.getEntries({
+    // Obtener eventos que puedan estar activos (incluyendo los que tienen fecha de fin)
+    // Obtenemos eventos que tengan fecha de inicio reciente o fecha de fin futura
+    const allEvents = await client.getEntries({
       content_type: 'event',
-      'fields.date[gte]': now, // Solo eventos con fecha mayor o igual a hoy
       order: 'fields.date', // Orden ascendente (más próximos primero)
-      limit: 10 // Aumentar el límite para mostrar más eventos
+      limit: 50 // Aumentar el límite para incluir eventos con fecha de fin
     });
 
-    if (futureEvents.items.length > 0) {
-      console.log(`✅ Se encontraron ${futureEvents.items.length} eventos futuros`);
-      return futureEvents.items.map(formatEvent);
+    // Filtrar eventos manualmente considerando fecha de inicio y fecha de fin
+    const validEvents = allEvents.items.filter(item => {
+      const fields = item.fields || {};
+      
+      // Obtener fecha de inicio
+      const startDateCandidates = [
+        fields.date,
+        fields.eventDate,
+        fields.startDate,
+        fields.startDateTime,
+        fields.datetime,
+        fields.fecha,
+        fields.fechaHora
+      ];
+
+      let startDate = null;
+      for (const candidate of startDateCandidates) {
+        const parsed = parseDateValue(candidate);
+        if (parsed.date && !Number.isNaN(parsed.date.getTime())) {
+          startDate = parsed.date;
+          break;
+        }
+      }
+
+      if (!startDate) {
+        return false; // Si no tiene fecha de inicio, no lo mostramos
+      }
+
+      // Obtener fecha de fin
+      const endDate = getEventEndDate(fields);
+
+      // Si tiene fecha de fin: mostrar si la fecha actual está entre inicio y fin (inclusive)
+      if (endDate) {
+        // Ajustar la fecha de fin al final del día para incluir todo el día
+        const endOfDay = new Date(endDate);
+        endOfDay.setHours(23, 59, 59, 999);
+        return now >= startDate && now <= endOfDay;
+      }
+
+      // Si NO tiene fecha de fin: mostrar solo si la fecha actual es menor o igual a la fecha de inicio
+      // (es decir, solo el día del evento o antes, no después)
+      const startOfDay = new Date(startDate);
+      startOfDay.setHours(0, 0, 0, 0);
+      const nowStartOfDay = new Date(now);
+      nowStartOfDay.setHours(0, 0, 0, 0);
+      return nowStartOfDay <= startOfDay;
+    });
+
+    // Limitar a los primeros 10 eventos más próximos
+    const limitedEvents = validEvents.slice(0, 10);
+
+    if (limitedEvents.length > 0) {
+      console.log(`✅ Se encontraron ${limitedEvents.length} eventos válidos (de ${allEvents.items.length} totales)`);
+      return limitedEvents.map(formatEvent);
     }
 
     console.log('ℹ️  No hay eventos futuros disponibles');
@@ -206,6 +258,29 @@ const normalizeManualTime = (timeValue) => {
   }
 
   return normalized;
+};
+
+// Obtener fecha de fin del evento
+const getEventEndDate = (fields) => {
+  const endDateCandidates = [
+    fields.endDate,
+    fields.end_date,
+    fields.fechaFin,
+    fields.fecha_fin,
+    fields.finishDate,
+    fields.finish_date,
+    fields.eventEndDate,
+    fields.event_end_date
+  ];
+
+  for (const candidate of endDateCandidates) {
+    const parsed = parseDateValue(candidate);
+    if (parsed.date && !Number.isNaN(parsed.date.getTime())) {
+      return parsed.date;
+    }
+  }
+
+  return null;
 };
 
 const getEventDateInfo = (fields) => {
