@@ -212,7 +212,7 @@ const sendRegistrationRequest = async (phoneNumberId, to, message) => {
         await sendTextMessage(
           phoneNumberId, 
           to, 
-          `¡Hola! 👋\n\nSoy el bot de eventos culturales de la UPC.\n\nPara acceder a los eventos, necesito que te registres primero.\n\n📝 *Envía tus datos en este formato:*\n\nNombre: [Tu nombre completo]\nDNI: [Tu DNI]\nCódigo: [Tu código de estudiante]\n\n*Ejemplo:*\nNombre: Juan Pérez García\nDNI: 12345678\nCódigo: 20240001`
+          `👋 ¡Hola! Soy UPC Cultural Bot ✨\n\nTu asistente para descubrir charlas, conciertos y actividades culturales organizadas o curadas por UPC Cultural 🎭🎶📚\n\nPuedo mostrarte los eventos de las próximas 4 semanas y ayudarte a no perderte nada.\n\nAntes de comenzar, necesito algunos datos para personalizar tu experiencia. 💡\n\n📝 *Envía tus datos en este formato:*\n\nNombre: [Tu nombre completo]\nDNI: [Tu DNI]\nCódigo: [Tu código de estudiante]\n\n*Ejemplo:*\nNombre: Juan Pérez García\nDNI: 12345678\nCódigo: 20240001`
         );
       }
     } else {
@@ -271,7 +271,7 @@ const handleStepByStepRegistration = async (phoneNumberId, to, message) => {
       await sendTextMessage(
         phoneNumberId,
         to,
-        `¡Hola! 👋\n\nSoy el bot de eventos culturales de la UPC.\n\nPara acceder a los eventos, necesito que te registres primero.\n\n📝 *Paso 1/3:*\n\n¿Cuál es tu nombre completo?`
+        `👋 ¡Hola! Soy UPC Cultural Bot ✨\n\nTu asistente para descubrir charlas, conciertos y actividades culturales organizadas o curadas por UPC Cultural 🎭🎶📚\n\nPuedo mostrarte los eventos de las próximas 4 semanas y ayudarte a no perderte nada.\n\nAntes de comenzar, necesito algunos datos para personalizar tu experiencia. 💡\n\n📝 *Paso 1/3:*\n\n¿Cuál es tu nombre completo?`
       );
     } else if (currentState.step === 'name') {
       // Segundo paso: pedir DNI
