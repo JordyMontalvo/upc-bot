@@ -74,6 +74,20 @@ const getUpcomingEvents = async () => {
 
       // Obtener fecha de fin
       const endDate = getEventEndDate(fields);
+      
+      // Log para depuración: mostrar campos disponibles del evento
+      if (title.includes('Noche MALI') || title.includes('Acción Climática')) {
+        console.log(`[DEBUG] Evento "${title}" - Campos disponibles:`, Object.keys(fields));
+        console.log(`[DEBUG] Evento "${title}" - Fecha inicio:`, startDate);
+        console.log(`[DEBUG] Evento "${title}" - Fecha fin encontrada:`, endDate);
+        // Buscar cualquier campo que contenga "end", "fin", "to", "until"
+        const dateFields = Object.keys(fields).filter(key => 
+          /end|fin|to|until/i.test(key) && fields[key]
+        );
+        if (dateFields.length > 0) {
+          console.log(`[DEBUG] Evento "${title}" - Campos de fecha relacionados:`, dateFields.map(key => ({ [key]: fields[key] })));
+        }
+      }
 
       // Normalizar fechas para comparación por día (sin hora)
       // Usar UTC para evitar problemas de zona horaria
@@ -298,13 +312,25 @@ const getEventEndDate = (fields) => {
     fields.finishDate,
     fields.finish_date,
     fields.eventEndDate,
-    fields.event_end_date
+    fields.event_end_date,
+    fields.endDateTime,
+    fields.end_date_time,
+    fields.fechaFinEvento,
+    fields.fecha_fin_evento,
+    fields.toDate,
+    fields.to_date,
+    fields.dateTo,
+    fields.date_to,
+    fields.untilDate,
+    fields.until_date
   ];
 
   for (const candidate of endDateCandidates) {
-    const parsed = parseDateValue(candidate);
-    if (parsed.date && !Number.isNaN(parsed.date.getTime())) {
-      return parsed.date;
+    if (candidate) {
+      const parsed = parseDateValue(candidate);
+      if (parsed.date && !Number.isNaN(parsed.date.getTime())) {
+        return parsed.date;
+      }
     }
   }
 
