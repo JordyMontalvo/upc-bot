@@ -312,7 +312,7 @@ const handleStepByStepRegistration = async (phoneNumberId, to, message) => {
       });
       
       // Enviar mensaje con botón para "No tengo código"
-      const studentCodeMessage = `✅ DNI guardado: *${dni}*\n\n📝 *Paso 3/3:*\n\n¿Cuál es tu código de estudiante?`;
+      const studentCodeMessage = `✅ DNI guardado: *${dni}*\n\n📝 *Paso 3/3:*\n\n¿Cuál es tu código de estudiante UPC?`;
       const buttons = [
         { title: '❌ No tengo código' }
       ];
@@ -339,7 +339,7 @@ const handleStepByStepRegistration = async (phoneNumberId, to, message) => {
         await sendTextMessage(
           phoneNumberId,
           to,
-          '❌ Por favor, ingresa un código de estudiante válido (mínimo 3 caracteres) o presiona "No tengo código".'
+          '❌ Por favor, ingresa un código de estudiante UPC válido (mínimo 3 caracteres) o presiona "No tengo código".'
         );
         return;
       }
@@ -388,7 +388,7 @@ const sendEventButton = async (phoneNumberId, to) => {
     const message = `¡Hola! 👋\n\nSoy el bot de eventos culturales de la UPC. Para ver los próximos eventos, usa el botón de abajo:`;
     
     const buttons = [
-      { title: '📅 Ver Eventos' },
+      { title: '📅 Ver próximos eventos' },
       { title: '⚙️ Configuración' }
     ];
     
