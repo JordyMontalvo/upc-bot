@@ -36,7 +36,7 @@ const handleWebhook = async (req, res) => {
     } else if (message.type === 'interactive' && message.interactive?.type === 'button_reply') {
       // Si es respuesta de botón, extraer el texto del botón
       const buttonText = message.interactive.button_reply?.title || '';
-      if (buttonText.includes('Ver Eventos') || buttonText.includes('Ver próximos eventos')) {
+      if (buttonText.includes('Ver Eventos') || buttonText.includes('Ver próximos eventos') || buttonText.includes('Ver próximos')) {
         messageText = 'eventos';
       } else if (buttonText.includes('Configuración')) {
         messageText = 'configuración';
