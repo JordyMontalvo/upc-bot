@@ -5,6 +5,9 @@ const { isUserRegistered, registerUser, getRegistrationState, updateRegistration
 // Configuración de modos de registro
 const REGISTRATION_MODE = 2; // 1 = mensaje completo, 2 = paso a paso
 
+// Almacenar timeouts para mensajes de despedida (3 minutos después de consultar eventos)
+const farewellTimeouts = new Map();
+
 // Formatear el mensaje del evento para WhatsApp
 const formatEventMessage = (event) => {
   let message = `🎭 *${event.title}*\n\n`;
@@ -62,6 +65,9 @@ const processMessage = async (phoneNumberId, from, message) => {
   try {
     const lowerCaseMessage = message.toLowerCase().trim();
     console.log(`[PROCESS] Procesando mensaje: "${message}" -> "${lowerCaseMessage}"`);
+    
+    // Cancelar timeout de despedida si el usuario envía cualquier mensaje
+    cancelFarewellTimeout(from);
     
     // Comandos de opt-out (funcionan siempre, incluso si no está registrado)
     if (isOptOutCommand(lowerCaseMessage)) {
@@ -407,9 +413,35 @@ const sendEventButton = async (phoneNumberId, to) => {
   }
 };
 
+// Enviar mensaje de despedida después de 20 segundos
+const sendFarewellMessage = async (phoneNumberId, to) => {
+  try {
+    const farewellMessage = `✨ ¡Eso es todo por ahora!\n\nGracias por explorar los eventos con UPC Cultural Bot 🎭🎶📚\n\nQue tengas un día lleno de inspiración y buenas historias.\n\nCuando quieras volver, aquí estaré para ayudarte. 🙌✨`;
+    await sendTextMessage(phoneNumberId, to, farewellMessage);
+    console.log(`[FAREWELL] Mensaje de despedida enviado a ${to}`);
+    // Eliminar el timeout del Map después de enviarlo
+    farewellTimeouts.delete(to);
+  } catch (error) {
+    console.error('Error al enviar mensaje de despedida:', error);
+    farewellTimeouts.delete(to);
+  }
+};
+
+// Cancelar timeout de despedida si existe
+const cancelFarewellTimeout = (phoneNumber) => {
+  if (farewellTimeouts.has(phoneNumber)) {
+    clearTimeout(farewellTimeouts.get(phoneNumber));
+    farewellTimeouts.delete(phoneNumber);
+    console.log(`[FAREWELL] Timeout cancelado para ${phoneNumber}`);
+  }
+};
+
 // Enviar lista de próximos eventos (máximo 3)
 const sendUpcomingEvents = async (phoneNumberId, to) => {
   try {
+    // Cancelar cualquier timeout de despedida previo
+    cancelFarewellTimeout(to);
+    
     const events = await getUpcomingEvents();
     const maxEvents = Math.min(events.length, 3); // Tomar máximo 3 eventos
     
@@ -419,6 +451,11 @@ const sendUpcomingEvents = async (phoneNumberId, to) => {
         to,
         '📅 No hay eventos programados actualmente.'
       );
+      // Programar mensaje de despedida después de 20 segundos
+      const timeout = setTimeout(() => {
+        sendFarewellMessage(phoneNumberId, to);
+      }, 20 * 1000); // 20 segundos en milisegundos
+      farewellTimeouts.set(to, timeout);
       return;
     }
     
@@ -444,6 +481,13 @@ const sendUpcomingEvents = async (phoneNumberId, to) => {
         await sendTextMessage(phoneNumberId, to, eventMessage);
       }
     }
+    
+    // Programar mensaje de despedida después de 20 segundos
+    const timeout = setTimeout(() => {
+      sendFarewellMessage(phoneNumberId, to);
+    }, 20 * 1000); // 20 segundos en milisegundos
+    farewellTimeouts.set(to, timeout);
+    console.log(`[FAREWELL] Timeout programado para ${to} (20 segundos)`);
     
   } catch (error) {
     console.error('Error al obtener eventos:', error);
