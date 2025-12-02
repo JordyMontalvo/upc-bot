@@ -451,14 +451,9 @@ const sendUpcomingEvents = async (phoneNumberId, to) => {
         to,
         '📅 No hay eventos programados actualmente.'
       );
-      // Enviar botón nuevamente después de mostrar que no hay eventos
-      console.log(`[EVENTOS] Enviando botón después de mostrar que no hay eventos a ${to}`);
-      await sendEventButton(phoneNumberId, to);
-      // Programar mensaje de despedida después de 20 segundos
-      const timeout = setTimeout(() => {
-        sendFarewellMessage(phoneNumberId, to);
-      }, 20 * 1000); // 20 segundos en milisegundos
-      farewellTimeouts.set(to, timeout);
+      // Enviar mensaje de despedida inmediatamente después de mostrar que no hay eventos
+      console.log(`[FAREWELL] Enviando mensaje de despedida después de mostrar que no hay eventos`);
+      await sendFarewellMessage(phoneNumberId, to);
       return;
     }
     
@@ -485,16 +480,9 @@ const sendUpcomingEvents = async (phoneNumberId, to) => {
       }
     }
     
-    // Enviar botón nuevamente después de mostrar los eventos
-    console.log(`[EVENTOS] Enviando botón después de mostrar eventos a ${to}`);
-    await sendEventButton(phoneNumberId, to);
-    
-    // Programar mensaje de despedida después de 20 segundos
-    const timeout = setTimeout(() => {
-      sendFarewellMessage(phoneNumberId, to);
-    }, 20 * 1000); // 20 segundos en milisegundos
-    farewellTimeouts.set(to, timeout);
-    console.log(`[FAREWELL] Timeout programado para ${to} (20 segundos)`);
+    // Enviar mensaje de despedida inmediatamente después de mostrar todos los eventos
+    console.log(`[FAREWELL] Enviando mensaje de despedida después de mostrar ${maxEvents} eventos`);
+    await sendFarewellMessage(phoneNumberId, to);
     
   } catch (error) {
     console.error('Error al obtener eventos:', error);
