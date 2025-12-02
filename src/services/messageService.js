@@ -394,7 +394,7 @@ const sendEventButton = async (phoneNumberId, to) => {
     const message = `¡Hola! 👋\n\nSoy el bot de eventos culturales de la UPC. Para ver los próximos eventos, usa el botón de abajo:`;
     
     const buttons = [
-      { title: '📅 Ver próximos' },
+      { title: '📅 Próximos eventos' },
       { title: '⚙️ Configuración' }
     ];
     
