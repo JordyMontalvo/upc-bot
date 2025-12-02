@@ -451,6 +451,9 @@ const sendUpcomingEvents = async (phoneNumberId, to) => {
         to,
         '📅 No hay eventos programados actualmente.'
       );
+      // Enviar botón nuevamente después de mostrar que no hay eventos
+      console.log(`[EVENTOS] Enviando botón después de mostrar que no hay eventos a ${to}`);
+      await sendEventButton(phoneNumberId, to);
       // Programar mensaje de despedida después de 20 segundos
       const timeout = setTimeout(() => {
         sendFarewellMessage(phoneNumberId, to);
@@ -481,6 +484,10 @@ const sendUpcomingEvents = async (phoneNumberId, to) => {
         await sendTextMessage(phoneNumberId, to, eventMessage);
       }
     }
+    
+    // Enviar botón nuevamente después de mostrar los eventos
+    console.log(`[EVENTOS] Enviando botón después de mostrar eventos a ${to}`);
+    await sendEventButton(phoneNumberId, to);
     
     // Programar mensaje de despedida después de 20 segundos
     const timeout = setTimeout(() => {
